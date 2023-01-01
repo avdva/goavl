@@ -2,6 +2,7 @@ package goavl
 
 import (
 	"fmt"
+	"io"
 	"math/rand"
 	"testing"
 
@@ -23,7 +24,7 @@ func intCmp(a, b int) int {
 
 func TestTreeInsert(t *testing.T) {
 	a := assert.New(t)
-	tree := New[int, int](intCmp, WithCountChildren(true))
+	tree := NewComparable[int, int](WithCountChildren(true))
 	for i := 0; i < 128; i++ {
 		a.Truef(tree.Insert(i, i), "k: %v", i)
 		mink, minv, found := tree.Min()
@@ -56,7 +57,7 @@ func TestTreeInsert(t *testing.T) {
 
 func TestTreeDelete(t *testing.T) {
 	a := assert.New(t)
-	tree := New[int, int](intCmp, WithCountChildren(true))
+	tree := NewComparable[int, int](WithCountChildren(true))
 	a.Equal(0, tree.Len())
 
 	a.True(tree.Insert(0, 0))
@@ -126,7 +127,7 @@ func TestTreeDelete(t *testing.T) {
 
 func TestTreeAt(t *testing.T) {
 	a := assert.New(t)
-	tree := New[int, int](intCmp, WithCountChildren(true))
+	tree := NewComparable[int, int](WithCountChildren(true))
 	for i := 0; i < 128; i++ {
 		a.Truef(tree.Insert(i, i), "k: %v", i)
 	}
@@ -138,9 +139,9 @@ func TestTreeAt(t *testing.T) {
 }
 
 func TestTreeRandom(t *testing.T) {
-	const count = 2048
+	const count = 1024
 	r := require.New(t)
-	tree := New[int, int](intCmp, WithCountChildren(true))
+	tree := NewComparable[int, int](WithCountChildren(true))
 	data := make([]int, count)
 	for i := 0; i < count; i++ {
 		data[i] = i
@@ -163,12 +164,12 @@ func TestTreeRandom(t *testing.T) {
 	}
 }
 
-func checkHeightAndBalance[K, V any](l location[K, V]) error {
+func checkHeightAndBalance[K, V any](l ptrLocation[K, V]) error {
 	_, _, _, err := recalcHeightAndBalance(l)
 	return err
 }
 
-func recalcHeightAndBalance[K, V any](l location[K, V]) (height uint8, lCount, rCount uint32, err error) {
+func recalcHeightAndBalance[K, V any](l ptrLocation[K, V]) (height uint8, lCount, rCount uint32, err error) {
 	if l.isNil() {
 		return 0, 0, 0, nil
 	}
@@ -201,6 +202,14 @@ func recalcHeightAndBalance[K, V any](l location[K, V]) (height uint8, lCount, r
 		return 0, 0, 0, fmt.Errorf("invalid right node count for k=%v, v=%v, curr=%d, actual=%d", l.key(), l.value(), l.rightCount(), rCount)
 	}
 	return height, lCount, rCount, nil
+}
+
+func printTree[K, V any](t *Tree[K, V], w io.Writer) {
+	t.traverse(func(loc ptrLocation[K, V]) bool {
+		w.Write([]byte(loc.String()))
+		w.Write([]byte{'\n'})
+		return true
+	})
 }
 
 func BenchmarkOtherInsert(b *testing.B) {

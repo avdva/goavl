@@ -8,9 +8,9 @@ type node[K, V any] struct {
 	k      K
 	v      V
 	counts uint64
-	left   location[K, V]
-	right  location[K, V]
-	parent location[K, V]
+	left   ptrLocation[K, V]
+	right  ptrLocation[K, V]
+	parent ptrLocation[K, V]
 }
 
 func (n *node[K, V]) height() uint8 {
