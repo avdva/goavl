@@ -2,6 +2,10 @@ package goavl
 
 import "fmt"
 
+var (
+	_ locaction[int, int] = (*ptrLocation[int, int])(nil)
+)
+
 const (
 	dirLeft   = -1
 	dirCenter = 0
@@ -12,6 +16,22 @@ type direction int8
 
 func (d direction) invert() direction {
 	return -d
+}
+
+type locaction[K, V any] interface {
+	isNil() bool
+	key() K
+	value() V
+	setValue(v V)
+	setKey(k K)
+	balance() int8
+	height() uint8
+	recalcHeight() (heightChanged bool)
+	leftCount() uint32
+	rightCount() uint32
+	childCount() uint32
+	recalcCounts()
+	String() string
 }
 
 type ptrLocation[K, V any] struct {
@@ -176,7 +196,7 @@ func (l *ptrLocation[K, V]) childCount() uint32 {
 	return l.ptr.leftNodes() + l.ptr.rightNodes()
 }
 
-func (l *ptrLocation[K, V]) recalcNodeCounts() {
+func (l *ptrLocation[K, V]) recalcCounts() {
 	var leftCount, rightCount uint32
 	if left := l.left(); !left.isNil() {
 		leftCount = 1 + left.childCount()

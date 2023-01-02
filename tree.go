@@ -110,7 +110,7 @@ func (t *Tree[K, V]) Insert(k K, v V) (inserted bool) {
 		}
 		if loc.recalcHeight() {
 			if t.options.CountChildren {
-				loc.recalcNodeCounts()
+				loc.recalcCounts()
 			}
 			t.checkBalance(loc.parent(), false)
 		} else {
@@ -128,7 +128,7 @@ func (t *Tree[K, V]) updateCounts(loc ptrLocation[K, V]) {
 		return
 	}
 	for !loc.isNil() {
-		loc.recalcNodeCounts()
+		loc.recalcCounts()
 		loc = loc.parent()
 	}
 }
@@ -364,7 +364,7 @@ func (t *Tree[K, V]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
 				return
 			}
 			if t.options.CountChildren {
-				loc.recalcNodeCounts()
+				loc.recalcCounts()
 			}
 		}
 		loc = parent
@@ -388,8 +388,8 @@ func (t *Tree[K, V]) rr(loc ptrLocation[K, V]) {
 	left.recalcHeight()
 
 	if t.options.CountChildren {
-		loc.recalcNodeCounts()
-		left.recalcNodeCounts()
+		loc.recalcCounts()
+		left.recalcCounts()
 	}
 }
 
@@ -418,9 +418,9 @@ func (t *Tree[K, V]) lr(loc ptrLocation[K, V]) {
 	leftRight.recalcHeight()
 
 	if t.options.CountChildren {
-		loc.recalcNodeCounts()
-		left.recalcNodeCounts()
-		leftRight.recalcNodeCounts()
+		loc.recalcCounts()
+		left.recalcCounts()
+		leftRight.recalcCounts()
 	}
 }
 
@@ -449,9 +449,9 @@ func (t *Tree[K, V]) rl(loc ptrLocation[K, V]) {
 	rightLeft.recalcHeight()
 
 	if t.options.CountChildren {
-		loc.recalcNodeCounts()
-		right.recalcNodeCounts()
-		rightLeft.recalcNodeCounts()
+		loc.recalcCounts()
+		right.recalcCounts()
+		rightLeft.recalcCounts()
 	}
 }
 
@@ -471,8 +471,8 @@ func (t *Tree[K, V]) ll(loc ptrLocation[K, V]) {
 	right.recalcHeight()
 
 	if t.options.CountChildren {
-		loc.recalcNodeCounts()
-		right.recalcNodeCounts()
+		loc.recalcCounts()
+		right.recalcCounts()
 	}
 }
 
