@@ -31,3 +31,19 @@ func (a *preAllocator[K, V]) new(k K, v V) ptrLocation[K, V] {
 }
 
 func (a *preAllocator[K, V]) free(l ptrLocation[K, V]) {}
+
+type arrayAllocator[K, V any] struct {
+	data []node[K, V]
+}
+
+func (aa *arrayAllocator[K, V]) new(k K, v V) idxLocation {
+	return idxLocation{idx:0}
+}
+
+
+
+type idxLocation struct {
+	idx int
+}
+
+

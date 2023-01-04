@@ -166,10 +166,15 @@ func (t *Tree[K, V]) Max() (k K, v V, found bool) {
 }
 
 // At returns a (key, value) pair at the ith position of the sorted array.
-// It panics if position >= tree.Len() or children node counts are not enabled for this tree.
-// Time complexity: O(1).
+// Panics if position >= tree.Len() or children node counts are not enabled for this tree.
+// Time complexity: O(logn).
 func (t *Tree[K, V]) At(position int) (k K, v V) {
-	if position >= t.Len() {
+	node := t.locateAt(position)
+	return node.key(), node.value()
+}
+
+func (t *Tree[K, V]) locateAt(position int) ptrLocation[K, V] {
+	if position < 0 || position >= t.Len() {
 		panic("index out of range")
 	}
 	if !t.options.CountChildren {
@@ -180,7 +185,7 @@ func (t *Tree[K, V]) At(position int) (k K, v V) {
 		leftCount := int(node.leftCount())
 		switch {
 		case position == leftCount:
-			return node.key(), node.value()
+			return node
 		case position < leftCount:
 			node = node.left()
 		default:
@@ -192,7 +197,7 @@ func (t *Tree[K, V]) At(position int) (k K, v V) {
 
 // Delete deletes a node from the tree.
 // Returns node's value and true, if the node was present in the tree.
-// Time complexity: O(1).
+// Time complexity: O(logn).
 func (t *Tree[K, V]) Delete(k K) (v V, deleted bool) {
 	loc, dir := t.locate(k)
 	if dir != dirCenter || loc.isNil() {
@@ -200,8 +205,17 @@ func (t *Tree[K, V]) Delete(k K) (v V, deleted bool) {
 	}
 	v = loc.value()
 	t.deleteAndReplace(loc)
-	t.length--
 	return v, true
+}
+
+// DeleteAt deletes a node at the given position.
+// Returns node's value. Panics if position >= tree.Len() or children node counts are not enabled for this tree.
+// Time complexity: O(logn).
+func (t *Tree[K, V]) DeleteAt(position int) (v V) {
+	loc := t.locateAt(position)
+	v = loc.value()
+	t.deleteAndReplace(loc)
+	return v
 }
 
 func (t *Tree[K, V]) findReplacement(loc ptrLocation[K, V]) ptrLocation[K, V] {
@@ -262,6 +276,7 @@ func (t *Tree[K, V]) deleteAndReplace(loc ptrLocation[K, V]) {
 			t.checkBalance(replacementParent, true)
 		}
 	}
+	t.length--
 	t.alloc.free(loc)
 }
 

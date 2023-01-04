@@ -136,6 +136,32 @@ func TestTreeAt(t *testing.T) {
 		a.Equal(i, k)
 		a.Equal(i, v)
 	}
+	a.Panics(func(){
+		tree.At(128)
+	})
+	a.Panics(func(){
+		tree := NewComparable[int, int](WithCountChildren(false))
+		tree.Insert(0, 0)
+		tree.At(0)
+	})
+}
+
+func TestTreeDeleteAt(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int](WithCountChildren(true))
+	for i := 0; i < 128; i++ {
+		a.Truef(tree.Insert(i, i), "k: %v", i)
+	}
+	for i := 64; i < 128; i++ {
+		a.Equal(i, tree.DeleteAt(64))
+	}
+	for i := 0; i < 64; i++ {
+		a.Equal(i, tree.DeleteAt(0))
+	}
+	a.Equal(0, tree.Len())
+	a.Panics(func(){
+		tree.DeleteAt(128)
+	})
 }
 
 func TestTreeRandom(t *testing.T) {
