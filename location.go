@@ -185,15 +185,15 @@ func (l *ptrLocation[K, V]) recalcHeight() (heightChanged bool) {
 }
 
 func (l *ptrLocation[K, V]) leftCount() uint32 {
-	return l.ptr.leftNodes()
+	return l.ptr.leftCount()
 }
 
 func (l *ptrLocation[K, V]) rightCount() uint32 {
-	return l.ptr.rightNodes()
+	return l.ptr.rightCount()
 }
 
 func (l *ptrLocation[K, V]) childCount() uint32 {
-	return l.ptr.leftNodes() + l.ptr.rightNodes()
+	return l.ptr.leftCount() + l.ptr.rightCount()
 }
 
 func (l *ptrLocation[K, V]) recalcCounts() {

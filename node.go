@@ -21,7 +21,7 @@ func (n *node[K, V]) setHeight(height uint8) {
 	n.counts = (n.counts & ^uint64(0xFF)) | uint64(height)
 }
 
-func (n *node[K, V]) leftNodes() uint32 {
+func (n *node[K, V]) leftCount() uint32 {
 	return uint32((n.counts >> 8) & countsMask)
 }
 
@@ -29,12 +29,28 @@ func (n *node[K, V]) setLeftNodes(count uint32) {
 	n.counts = (n.counts & ^uint64(countsMask<<8)) | (uint64(count) << 8)
 }
 
-func (n *node[K, V]) rightNodes() uint32 {
+func (n *node[K, V]) rightCount() uint32 {
 	return uint32((n.counts >> 36) & countsMask)
 }
 
 func (n *node[K, V]) setRightNodes(count uint32) {
 	n.counts = (n.counts & ^uint64(countsMask<<36)) | (uint64(count) << 36)
+}
+
+func (n *node[K, V]) key() K {
+	return n.k
+}
+
+func (n *node[K, V]) value() V {
+	return n.v
+}
+
+func (n *node[K, V]) setValue(v V) {
+	n.v = v
+}
+
+func (n *node[K, V]) setKey(k K) {
+	n.k = k
 }
 
 func newNode[K, V any](k K, v V) *node[K, V] {
