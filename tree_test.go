@@ -4,23 +4,11 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"os"
 	"testing"
 
-	gavl "github.com/karask/go-avltree"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"github.com/tidwall/btree"
 )
-
-func intCmp(a, b int) int {
-	if a < b {
-		return -1
-	}
-	if a > b {
-		return 1
-	}
-	return 0
-}
 
 func TestTreeInsert(t *testing.T) {
 	a := assert.New(t)
@@ -87,7 +75,7 @@ func TestTreeDelete(t *testing.T) {
 	a.True(deleted)
 	a.Equal(1, v)
 	a.Equal(1, tree.Len())
-	v, deleted = tree.Delete(-1)
+	_, deleted = tree.Delete(-1)
 	a.False(deleted)
 	a.NoError(checkHeightAndBalance(tree.root))
 	v, deleted = tree.Delete(0)
@@ -136,10 +124,10 @@ func TestTreeAt(t *testing.T) {
 		a.Equal(i, k)
 		a.Equal(i, v)
 	}
-	a.Panics(func(){
+	a.Panics(func() {
 		tree.At(128)
 	})
-	a.Panics(func(){
+	a.Panics(func() {
 		tree := NewComparable[int, int](WithCountChildren(false))
 		tree.Insert(0, 0)
 		tree.At(0)
@@ -159,14 +147,14 @@ func TestTreeDeleteAt(t *testing.T) {
 		a.Equal(i, tree.DeleteAt(0))
 	}
 	a.Equal(0, tree.Len())
-	a.Panics(func(){
+	a.Panics(func() {
 		tree.DeleteAt(128)
 	})
 }
 
 func TestTreeRandom(t *testing.T) {
 	const count = 1024
-	r := require.New(t)
+	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
 	data := make([]int, count)
 	for i := 0; i < count; i++ {
@@ -177,16 +165,51 @@ func TestTreeRandom(t *testing.T) {
 			data[i], data[j] = data[j], data[i]
 		})
 		for _, v := range data {
-			r.True(tree.Insert(v, v))
-			r.NoError(checkHeightAndBalance(tree.root))
+			a.True(tree.Insert(v, v))
+			if !a.NoError(checkHeightAndBalance(tree.root)) {
+				tree.locate(v)
+				fmt.Println(tree.Len())
+				printTree(tree, os.Stdout)
+				t.FailNow()
+			}
 		}
 		for i, v := range data {
 			val, deleted := tree.Delete(v)
-			r.Equal(v, val)
-			r.Truef(deleted, "key: %d, iter = %d", v, i)
-			r.NoErrorf(checkHeightAndBalance(tree.root), "%d", i)
+			a.Equal(v, val)
+			a.Truef(deleted, "key: %d, iter = %d", v, i)
+			a.NoErrorf(checkHeightAndBalance(tree.root), "%d", i)
 		}
-		r.Equal(0, tree.Len())
+		a.Equal(0, tree.Len())
+	}
+}
+
+func TestTreeIterator(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int](WithCountChildren(true))
+	for i := 0; i < 128; i++ {
+		a.Truef(tree.Insert(i, i), "k: %v", i)
+	}
+	it := tree.ForwardIterator()
+	for i := 0; ; i++ {
+		k, v, ok := it.Next()
+		if i == 128 {
+			a.False(ok)
+			break
+		}
+		a.True(ok)
+		a.Equal(i, k)
+		a.Equal(i, v)
+	}
+	rev := tree.ReverseIterator()
+	for i := 127; ; i-- {
+		k, v, ok := rev.Next()
+		if i == -1 {
+			a.False(ok)
+			break
+		}
+		a.True(ok)
+		a.Equal(i, k)
+		a.Equal(i, v)
 	}
 }
 
@@ -230,57 +253,27 @@ func recalcHeightAndBalance[K, V any](l ptrLocation[K, V]) (height uint8, lCount
 	return height, lCount, rCount, nil
 }
 
-func printTree[K, V any](t *Tree[K, V], w io.Writer) {
-	t.traverse(func(loc ptrLocation[K, V]) bool {
-		w.Write([]byte(loc.String()))
-		w.Write([]byte{'\n'})
+func printTree[K, V any, Cmp func(a, b K) int](t *Tree[K, V, Cmp], w io.Writer) {
+	traverseTree(t, func(loc ptrLocation[K, V]) bool {
+		_, _ = w.Write([]byte(loc.String()))
+		_, _ = w.Write([]byte{'\n'})
 		return true
 	})
 }
 
-func BenchmarkOtherInsert(b *testing.B) {
-	type item struct {
-		k, v int
+func traverseTree[K, V any, Cmp func(a, b K) int](t *Tree[K, V, Cmp], f func(loc ptrLocation[K, V]) bool) {
+	if t.root.isNil() {
+		return
 	}
-	r := rand.New(rand.NewSource(0))
-	t := btree.NewBTreeGOptions(func(a, b item) bool {
-		return a.k < b.k
-	}, btree.Options{
-		NoLocks: true,
-	})
-	for i := 0; i < b.N; i++ {
-		k := r.Intn(50000)
-		it := item{
-			k: k,
-			v: k,
-		}
-		t.Set(it)
-		if _, found := t.Get(it); !found {
-			panic("not found")
-		}
-	}
+	traverseLocation(t.root, f)
 }
 
-func BenchmarkInsert(b *testing.B) {
-	tree := New[int, int](intCmp)
-	r := rand.New(rand.NewSource(0))
-	for i := 0; i < b.N; i++ {
-		k := r.Intn(50000)
-		tree.Insert(k, k)
-		if _, found := tree.Find(k); !found {
-			panic("not found")
-		}
+func traverseLocation[K, V any](loc ptrLocation[K, V], f func(loc ptrLocation[K, V]) bool) {
+	if !loc.left().isNil() {
+		traverseLocation(loc.left(), f)
 	}
-}
-
-func BenchmarkInsertAVL(b *testing.B) {
-	tree := gavl.AVLTree{}
-	r := rand.New(rand.NewSource(0))
-	for i := 0; i < b.N; i++ {
-		k := r.Intn(50000)
-		tree.Add(k, k)
-		if n := tree.Search(k); n == nil {
-			panic("not found")
-		}
+	f(loc)
+	if !loc.right().isNil() {
+		traverseLocation(loc.right(), f)
 	}
 }

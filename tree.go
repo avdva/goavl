@@ -4,15 +4,7 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-type tree[K, V any, A allocator[K, V]] struct {
-	root     ptrLocation[K, V]
-	min, max ptrLocation[K, V]
-	length   int
-	cmp      func(a, b K) int
-	alloc    A
-}
-
-// Option is a funcion type used to configure tree's behaviour.
+// Option is a function type used to configure tree's behavior.
 type Option func(o *Options)
 
 // Options defines some tree's parameters.
@@ -21,7 +13,7 @@ type Options struct {
 }
 
 // WithCountChildren is used to set CountChildren option.
-// If set, each node will have a count of children in the left and right subtrees.
+// If set, each node will have a count of children in the left and right sub-trees.
 // This enables usage of the `At` function.
 func WithCountChildren(count bool) Option {
 	return func(o *Options) {
@@ -31,11 +23,13 @@ func WithCountChildren(count bool) Option {
 
 // Tree is a generic avl tree.
 // AVL tree (https://en.wikipedia.org/wiki/AVL_tree) is a self-balancing binary search tree.
-// For each node of the tree the heights of the left and right subtrees differ by at most one.
+// For each node of the tree the heights of the left and right sub-trees differ by at most one.
 // Find and Delete operations have O(logn) complexity.
-type Tree[K, V any] struct {
-	options Options
-	*tree[K, V, *preAllocator[K, V]]
+type Tree[K, V any, Cmp func(a, b K) int] struct {
+	options        Options
+	root, min, max ptrLocation[K, V]
+	length         int
+	cmp            Cmp
 }
 
 // New returns a new Tree.
@@ -59,12 +53,9 @@ type Tree[K, V any] struct {
 //	}
 //
 // tree := New[int, int](intCmp, WithCountChildren(true))
-func New[K, V any, Cmp func(a, b K) int](cmp Cmp, opts ...Option) *Tree[K, V] {
-	result := &Tree[K, V]{
-		tree: &tree[K, V, *preAllocator[K, V]]{
-			cmp:   cmp,
-			alloc: &preAllocator[K, V]{},
-		},
+func New[K, V any, Cmp func(a, b K) int](cmp Cmp, opts ...Option) *Tree[K, V, Cmp] {
+	result := &Tree[K, V, Cmp]{
+		cmp: cmp,
 	}
 	for _, o := range opts {
 		o(&result.options)
@@ -75,8 +66,8 @@ func New[K, V any, Cmp func(a, b K) int](cmp Cmp, opts ...Option) *Tree[K, V] {
 // NewComparable returns a new tree.
 // This is just a wrapper for New(), where K satisfies constraints.Ordered.
 // Example: NewComparable[int, int]()
-func NewComparable[K constraints.Ordered, V any](opts ...Option) *Tree[K, V] {
-	return New[K, V](func(a, b K) int {
+func NewComparable[K constraints.Ordered, V any](opts ...Option) *Tree[K, V, func(a, b K) int] {
+	return New[K, V, func(a, b K) int](func(a, b K) int {
 		if a < b {
 			return -1
 		}
@@ -91,13 +82,13 @@ func NewComparable[K constraints.Ordered, V any](opts ...Option) *Tree[K, V] {
 // Returns true, if a new node was added, and false otherwise.
 // If the key `k` was present in the tree, node's value is updated to `v`.
 // Time complexity: O(logn).
-func (t *Tree[K, V]) Insert(k K, v V) (inserted bool) {
+func (t *Tree[K, V, Cmp]) Insert(k K, v V) (inserted bool) {
 	loc, dir := t.locate(k)
 	if dir == dirCenter && !loc.isNil() {
 		loc.setValue(v)
 		return
 	}
-	newNode := t.alloc.new(k, v)
+	newNode := makeLocation(k, v)
 	t.length++
 	inserted = true
 	switch dir {
@@ -123,7 +114,7 @@ func (t *Tree[K, V]) Insert(k K, v V) (inserted bool) {
 	return inserted
 }
 
-func (t *Tree[K, V]) updateCounts(loc ptrLocation[K, V]) {
+func (t *Tree[K, V, Cmp]) updateCounts(loc ptrLocation[K, V]) {
 	if !t.options.CountChildren {
 		return
 	}
@@ -135,7 +126,7 @@ func (t *Tree[K, V]) updateCounts(loc ptrLocation[K, V]) {
 
 // Find returns a value for key k.
 // Time complexity: O(logn).
-func (t *Tree[K, V]) Find(k K) (v V, found bool) {
+func (t *Tree[K, V, Cmp]) Find(k K) (v V, found bool) {
 	loc, dir := t.locate(k)
 	if dir != dirCenter {
 		return v, false
@@ -143,10 +134,10 @@ func (t *Tree[K, V]) Find(k K) (v V, found bool) {
 	return loc.value(), true
 }
 
-// Min returns the minumum of the tree.
+// Min returns the minimum of the tree.
 // If the tree is empty, `found` value will be false.
 // Time complexity: O(1).
-func (t *Tree[K, V]) Min() (k K, v V, found bool) {
+func (t *Tree[K, V, Cmp]) Min() (k K, v V, found bool) {
 	if found = !t.min.isNil(); found {
 		k = t.min.key()
 		v = t.min.value()
@@ -157,7 +148,7 @@ func (t *Tree[K, V]) Min() (k K, v V, found bool) {
 // Max returns the maximum of the tree.
 // If the tree is empty, `found` value will be false.
 // Time complexity: O(1).
-func (t *Tree[K, V]) Max() (k K, v V, found bool) {
+func (t *Tree[K, V, Cmp]) Max() (k K, v V, found bool) {
 	if found = !t.max.isNil(); found {
 		k = t.max.key()
 		v = t.max.value()
@@ -168,12 +159,12 @@ func (t *Tree[K, V]) Max() (k K, v V, found bool) {
 // At returns a (key, value) pair at the ith position of the sorted array.
 // Panics if position >= tree.Len() or children node counts are not enabled for this tree.
 // Time complexity: O(logn).
-func (t *Tree[K, V]) At(position int) (k K, v V) {
+func (t *Tree[K, V, Cmp]) At(position int) (k K, v V) {
 	node := t.locateAt(position)
 	return node.key(), node.value()
 }
 
-func (t *Tree[K, V]) locateAt(position int) ptrLocation[K, V] {
+func (t *Tree[K, V, Cmp]) locateAt(position int) ptrLocation[K, V] {
 	if position < 0 || position >= t.Len() {
 		panic("index out of range")
 	}
@@ -198,7 +189,7 @@ func (t *Tree[K, V]) locateAt(position int) ptrLocation[K, V] {
 // Delete deletes a node from the tree.
 // Returns node's value and true, if the node was present in the tree.
 // Time complexity: O(logn).
-func (t *Tree[K, V]) Delete(k K) (v V, deleted bool) {
+func (t *Tree[K, V, Cmp]) Delete(k K) (v V, deleted bool) {
 	loc, dir := t.locate(k)
 	if dir != dirCenter || loc.isNil() {
 		return v, false
@@ -211,14 +202,14 @@ func (t *Tree[K, V]) Delete(k K) (v V, deleted bool) {
 // DeleteAt deletes a node at the given position.
 // Returns node's value. Panics if position >= tree.Len() or children node counts are not enabled for this tree.
 // Time complexity: O(logn).
-func (t *Tree[K, V]) DeleteAt(position int) (v V) {
+func (t *Tree[K, V, Cmp]) DeleteAt(position int) (v V) {
 	loc := t.locateAt(position)
 	v = loc.value()
 	t.deleteAndReplace(loc)
 	return v
 }
 
-func (t *Tree[K, V]) findReplacement(loc ptrLocation[K, V]) ptrLocation[K, V] {
+func (t *Tree[K, V, Cmp]) findReplacement(loc ptrLocation[K, V]) ptrLocation[K, V] {
 	left, right := loc.left(), loc.right()
 	var replacement ptrLocation[K, V]
 	if left.isNil() {
@@ -237,7 +228,7 @@ func (t *Tree[K, V]) findReplacement(loc ptrLocation[K, V]) ptrLocation[K, V] {
 	return replacement
 }
 
-func (t *Tree[K, V]) deleteAndReplace(loc ptrLocation[K, V]) {
+func (t *Tree[K, V, Cmp]) deleteAndReplace(loc ptrLocation[K, V]) {
 	replacement := t.findReplacement(loc)
 	parent, dir := loc.parentAndDir()
 	if replacement.isNil() {
@@ -277,7 +268,6 @@ func (t *Tree[K, V]) deleteAndReplace(loc ptrLocation[K, V]) {
 		}
 	}
 	t.length--
-	t.alloc.free(loc)
 }
 
 func goLeft[K, V any](loc ptrLocation[K, V]) ptrLocation[K, V] {
@@ -300,7 +290,7 @@ func goRight[K, V any](loc ptrLocation[K, V]) ptrLocation[K, V] {
 	return loc
 }
 
-func (t *Tree[K, V]) setRoot(root ptrLocation[K, V]) {
+func (t *Tree[K, V, Cmp]) setRoot(root ptrLocation[K, V]) {
 	t.root = root
 	if !t.root.isNil() {
 		t.root.setParent(ptrLocation[K, V]{})
@@ -308,7 +298,7 @@ func (t *Tree[K, V]) setRoot(root ptrLocation[K, V]) {
 }
 
 // Clear clears the tree.
-func (t *Tree[K, V]) Clear() {
+func (t *Tree[K, V, Cmp]) Clear() {
 	t.root = ptrLocation[K, V]{}
 	t.min = t.root
 	t.max = t.root
@@ -316,14 +306,35 @@ func (t *Tree[K, V]) Clear() {
 }
 
 // Len returns the number of elements.
-func (t *Tree[K, V]) Len() int {
+func (t *Tree[K, V, Cmp]) Len() int {
 	return t.length
 }
 
-func (t *Tree[K, V]) locate(k K) (loc ptrLocation[K, V], dir direction) {
+// ForwardIterator returns a forward iterator.
+func (t *Tree[K, V, Cmp]) ForwardIterator() Iterator[K, V, Cmp] {
+	return Iterator[K, V, Cmp]{
+		iterator: iterator[K, V, Cmp]{
+			tree: t,
+			loc:  t.min,
+		},
+	}
+}
+
+// ReverseIterator returns a reverse iterator.
+func (t *Tree[K, V, Cmp]) ReverseIterator() ReverseIterator[K, V, Cmp] {
+	return ReverseIterator[K, V, Cmp]{
+		iterator: iterator[K, V, Cmp]{
+			tree: t,
+			loc:  t.max,
+		},
+	}
+}
+
+func (t *Tree[K, V, Cmp]) locate(k K) (loc ptrLocation[K, V], dir direction) {
 	loc = t.root
+	dir = dirCenter
 	if loc.isNil() {
-		return loc, dirCenter
+		return loc, dir
 	}
 	for {
 		var next ptrLocation[K, V]
@@ -345,7 +356,7 @@ func (t *Tree[K, V]) locate(k K) (loc ptrLocation[K, V], dir direction) {
 	return loc, dir
 }
 
-func (t *Tree[K, V]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
+func (t *Tree[K, V, Cmp]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
 	for {
 		if loc.isNil() {
 			return
@@ -386,7 +397,7 @@ func (t *Tree[K, V]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
 	}
 }
 
-func (t *Tree[K, V]) rr(loc ptrLocation[K, V]) {
+func (t *Tree[K, V, Cmp]) rr(loc ptrLocation[K, V]) {
 	left := loc.left()
 	leftRight := left.right()
 	parent, dir := loc.parentAndDir()
@@ -408,7 +419,7 @@ func (t *Tree[K, V]) rr(loc ptrLocation[K, V]) {
 	}
 }
 
-func (t *Tree[K, V]) lr(loc ptrLocation[K, V]) {
+func (t *Tree[K, V, Cmp]) lr(loc ptrLocation[K, V]) {
 	left := loc.left()
 	leftRight := left.right()
 
@@ -439,7 +450,7 @@ func (t *Tree[K, V]) lr(loc ptrLocation[K, V]) {
 	}
 }
 
-func (t *Tree[K, V]) rl(loc ptrLocation[K, V]) {
+func (t *Tree[K, V, Cmp]) rl(loc ptrLocation[K, V]) {
 	right := loc.right()
 	rightLeft := right.left()
 
@@ -470,7 +481,7 @@ func (t *Tree[K, V]) rl(loc ptrLocation[K, V]) {
 	}
 }
 
-func (t *Tree[K, V]) ll(loc ptrLocation[K, V]) {
+func (t *Tree[K, V, Cmp]) ll(loc ptrLocation[K, V]) {
 	right := loc.right()
 	rightLeft := right.left()
 	parent, dir := loc.parentAndDir()
@@ -488,22 +499,5 @@ func (t *Tree[K, V]) ll(loc ptrLocation[K, V]) {
 	if t.options.CountChildren {
 		loc.recalcCounts()
 		right.recalcCounts()
-	}
-}
-
-func (t *Tree[K, V]) traverse(f func(loc ptrLocation[K, V]) bool) {
-	if t.root.isNil() {
-		return
-	}
-	traverseLocation(t.root, f)
-}
-
-func traverseLocation[K, V any](loc ptrLocation[K, V], f func(loc ptrLocation[K, V]) bool) {
-	if !loc.left().isNil() {
-		traverseLocation(loc.left(), f)
-	}
-	f(loc)
-	if !loc.right().isNil() {
-		traverseLocation(loc.right(), f)
 	}
 }
