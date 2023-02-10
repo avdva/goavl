@@ -1,5 +1,7 @@
 github.com/avdva/goavl v0.1.0 h1:lgmhMorLNm4NG+qtParWqS5cZ2Y7Q9I5XJgUvQwpvf0=
 github.com/avdva/goavl v0.1.0/go.mod h1:ZdB+3keLHCWnf2aL2t6OM7yuLtVSf/loZeVwINtHGsg=
+github.com/avdva/goavl v0.2.0 h1:qdQoenWvpwhcfKMYYxq5OqiICwVtwEERkpuarYzw9lU=
+github.com/avdva/goavl v0.2.0/go.mod h1:jhHSAuCqr07zsKLM7EIS2HtXL5j8VSyHFQ44p2T/pEw=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/karask/go-avltree v0.0.0-20210208113816-739fb7fa1601 h1:OVyBI/1hQh1MoJXpkq9z828bZmjZ83Mos75ApDQgJnU=
 github.com/karask/go-avltree v0.0.0-20210208113816-739fb7fa1601/go.mod h1:3JyQvtvakHiluxP08Nsny2yh3SBiOSppcGJjdWcv4K4=
@@ -7,4 +9,6 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/stretchr/testify v1.8.1 h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=
 github.com/tidwall/btree v1.6.0 h1:LDZfKfQIBHGHWSwckhXI0RPSXzlo+KYdjK7FWSqOzzg=
 github.com/tidwall/btree v1.6.0/go.mod h1:twD9XRA5jj9VUQGELzDO4HPQTNJsoWWfYEL+EUQ2cKY=
+golang.org/x/exp v0.0.0-20230210204819-062eb4c674ab h1:628ME69lBm9C6JY2wXhAph/yjN3jezx1z7BIDLUwxjo=
+golang.org/x/exp v0.0.0-20230210204819-062eb4c674ab/go.mod h1:CxIveKay+FTh1D0yPZemJVgC/95VzuuOLq5Qi4xnoYc=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
