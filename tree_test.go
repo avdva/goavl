@@ -236,7 +236,7 @@ func TestTreeAscend(t *testing.T) {
 		}
 	}
 	it = tree.Ascend(101)
-	k, v, ok = it.Next()
+	_, _, ok = it.Next()
 	a.False(ok)
 }
 
@@ -264,7 +264,7 @@ func TestTreeDescend(t *testing.T) {
 		}
 	}
 	it = tree.Descend(-1)
-	k, v, ok = it.Next()
+	_, _, ok = it.Next()
 	a.False(ok)
 }
 
