@@ -310,23 +310,51 @@ func (t *Tree[K, V, Cmp]) Len() int {
 	return t.length
 }
 
-// ForwardIterator returns a forward iterator.
-func (t *Tree[K, V, Cmp]) ForwardIterator() Iterator[K, V, Cmp] {
-	return Iterator[K, V, Cmp]{
-		iterator: iterator[K, V, Cmp]{
-			tree: t,
-			loc:  t.min,
-		},
+// AscendFromStart returns an iterator pointing to the smallest element.
+func (t *Tree[K, V, Cmp]) AscendFromStart() Iterator[K, V] {
+	return Iterator[K, V]{
+		head: t.min,
+		tail: t.max,
+		loc:  t.min,
 	}
 }
 
-// ReverseIterator returns a reverse iterator.
-func (t *Tree[K, V, Cmp]) ReverseIterator() ReverseIterator[K, V, Cmp] {
-	return ReverseIterator[K, V, Cmp]{
-		iterator: iterator[K, V, Cmp]{
-			tree: t,
-			loc:  t.max,
-		},
+// DescendFromEnd returns an iterator pointing to the largest element.
+func (t *Tree[K, V, Cmp]) DescendFromEnd() Iterator[K, V] {
+	return Iterator[K, V]{
+		head: t.min,
+		tail: t.max,
+		loc:  t.max,
+	}
+}
+
+// Ascend returns an iterator pointing to the element that's >= `from`.
+func (t *Tree[K, V, Cmp]) Ascend(from K) Iterator[K, V] {
+	loc, dir := t.locate(from)
+	if dir == dirRight {
+		for !loc.isNil() && dir == dirRight {
+			loc, dir = loc.parentAndDir()
+		}
+	}
+	return Iterator[K, V]{
+		head: t.min,
+		tail: t.max,
+		loc:  loc,
+	}
+}
+
+// Descend returns an iterator pointing to the element that's <= `from`.
+func (t *Tree[K, V, Cmp]) Descend(from K) Iterator[K, V] {
+	loc, dir := t.locate(from)
+	if dir == dirLeft {
+		for !loc.isNil() && dir == dirLeft {
+			loc, dir = loc.parentAndDir()
+		}
+	}
+	return Iterator[K, V]{
+		head: t.min,
+		tail: t.max,
+		loc:  loc,
 	}
 }
 

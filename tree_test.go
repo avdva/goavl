@@ -189,7 +189,7 @@ func TestTreeIterator(t *testing.T) {
 	for i := 0; i < 128; i++ {
 		a.Truef(tree.Insert(i, i), "k: %v", i)
 	}
-	it := tree.ForwardIterator()
+	it := tree.AscendFromStart()
 	for i := 0; ; i++ {
 		k, v, ok := it.Next()
 		if i == 128 {
@@ -200,9 +200,8 @@ func TestTreeIterator(t *testing.T) {
 		a.Equal(i, k)
 		a.Equal(i, v)
 	}
-	rev := tree.ReverseIterator()
 	for i := 127; ; i-- {
-		k, v, ok := rev.Next()
+		k, v, ok := it.Prev()
 		if i == -1 {
 			a.False(ok)
 			break
@@ -211,6 +210,62 @@ func TestTreeIterator(t *testing.T) {
 		a.Equal(i, k)
 		a.Equal(i, v)
 	}
+}
+
+func TestTreeAscend(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int]()
+	for i := 0; i <= 100; i += 5 {
+		a.Truef(tree.Insert(i, i), "k: %v", i)
+	}
+	it := tree.Ascend(-1)
+	k, v, ok := it.Next()
+	a.True(ok)
+	a.Equal(0, k)
+	a.Equal(0, v)
+	for i := 0; i <= 100; i++ {
+		it = tree.Ascend(i)
+		k, v, ok := it.Next()
+		a.True(ok)
+		if rem := i % 5; rem == 0 {
+			a.Equal(i, k)
+			a.Equal(i, v)
+		} else {
+			a.Equal(i-rem+5, k)
+			a.Equal(i-rem+5, v)
+		}
+	}
+	it = tree.Ascend(101)
+	k, v, ok = it.Next()
+	a.False(ok)
+}
+
+func TestTreeDescend(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int]()
+	for i := 0; i <= 100; i += 5 {
+		a.Truef(tree.Insert(i, i), "k: %v", i)
+	}
+	it := tree.Descend(101)
+	k, v, ok := it.Next()
+	a.True(ok)
+	a.Equal(100, k)
+	a.Equal(100, v)
+	for i := 0; i <= 100; i++ {
+		it = tree.Descend(i)
+		k, v, ok := it.Next()
+		a.True(ok)
+		if rem := i % 5; rem == 0 {
+			a.Equal(i, k)
+			a.Equal(i, v)
+		} else {
+			a.Equal(i-rem, k)
+			a.Equal(i-rem, v)
+		}
+	}
+	it = tree.Descend(-1)
+	k, v, ok = it.Next()
+	a.False(ok)
 }
 
 func checkHeightAndBalance[K, V any](l ptrLocation[K, V]) error {

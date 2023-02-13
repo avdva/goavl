@@ -28,7 +28,7 @@ func ExampleTree() {
 	tree.Insert("b", "b")
 	// print tree, ascending
 	fmt.Println("tree, normal order")
-	fwdIt := tree.ForwardIterator()
+	fwdIt := tree.AscendFromStart()
 	for {
 		k, v, ok := fwdIt.Next()
 		if !ok {
@@ -38,9 +38,9 @@ func ExampleTree() {
 	}
 	// print tree, descending
 	fmt.Println("tree, reverse order")
-	revIt := tree.ReverseIterator()
+	revIt := tree.DescendFromEnd()
 	for {
-		k, v, ok := revIt.Next()
+		k, v, ok := revIt.Prev()
 		if !ok {
 			break
 		}
@@ -75,7 +75,7 @@ func ExampleNewComparable() {
 		tree.Insert(v, v)
 	}
 	fmt.Println("tree, normal order")
-	fwdIt := tree.ForwardIterator()
+	fwdIt := tree.AscendFromStart()
 	for {
 		k, v, ok := fwdIt.Next()
 		if !ok {
