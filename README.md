@@ -1,6 +1,10 @@
 # goavl
 An [AVL tree](https://en.wikipedia.org/wiki/AVL_tree) implementation in Go.
 
+## Badges
+
+![Build Status](https://github.com/avdva/goavl/workflows/golangci-lint/badge.svg)
+
 ## Installation
 
 To start using this package, run:
@@ -36,8 +40,10 @@ DeleteAt(position int) (v V) // deletes the ith element. WithCountChildren must 
 Clear() // deletes all the elements.
 
 iterate:
-ForwardIterator() Iterator[K, V, Cmp] // returns a forward iterator.
-ReverseIterator() ReverseIterator[K, V, Cmp] // returns a reverse iterator.
+AscendFromStart() Iterator[K, V] // returns an iterator pointing to the smallest element.
+DescendFromEnd() Iterator[K, V] // returns an iterator pointing to the largest element.
+Ascend(from K) Iterator[K, V] // returns an iterator pointing to the element that's >= `from`.
+Descend(from K) Iterator[K, V] // returns an iterator pointing to the element that's <= `from`.
 ```
 
 Please see the [examples](/tree_example_test.go) for more details.
