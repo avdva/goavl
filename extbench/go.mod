@@ -8,4 +8,4 @@ require (
 	github.com/tidwall/btree v1.6.0
 )
 
-require golang.org/x/exp v0.0.0-20230210204819-062eb4c674ab // indirect
+require golang.org/x/exp v0.0.0-20230213192124-5e25df0256eb // indirect

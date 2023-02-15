@@ -1,0 +1,26 @@
+goos: linux
+goarch: amd64
+pkg: bench
+cpu: 12th Gen Intel(R) Core(TM) i7-12700H
+BenchmarkTidwallBTree-20    	 4474992	       243.9 ns/op
+BenchmarkTidwallBTree-20    	 4504134	       247.3 ns/op
+BenchmarkTidwallBTree-20    	 4329000	       253.2 ns/op
+BenchmarkTidwallBTree-20    	 4255225	       256.0 ns/op
+BenchmarkTidwallBTree-20    	 4132792	       257.6 ns/op
+BenchmarkKaraskAVL-20       	 4485937	       242.4 ns/op
+BenchmarkKaraskAVL-20       	 4491636	       235.9 ns/op
+BenchmarkKaraskAVL-20       	 4550422	       234.9 ns/op
+BenchmarkKaraskAVL-20       	 4370808	       239.7 ns/op
+BenchmarkKaraskAVL-20       	 4591514	       239.0 ns/op
+BenchmarkAVL-20             	 5157362	       209.6 ns/op
+BenchmarkAVL-20             	 5200602	       211.1 ns/op
+BenchmarkAVL-20             	 4977159	       212.0 ns/op
+BenchmarkAVL-20             	 4996488	       213.2 ns/op
+BenchmarkAVL-20             	 4935922	       216.7 ns/op
+BenchmarkGoMap-20           	31481278	        37.84 ns/op
+BenchmarkGoMap-20           	31217930	        37.31 ns/op
+BenchmarkGoMap-20           	31557294	        37.69 ns/op
+BenchmarkGoMap-20           	31693318	        36.73 ns/op
+BenchmarkGoMap-20           	31253703	        38.12 ns/op
+PASS
+ok  	bench	30.818s

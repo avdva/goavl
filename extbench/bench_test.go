@@ -1,4 +1,4 @@
-package bench
+package extbench
 
 import (
 	"math/rand"
