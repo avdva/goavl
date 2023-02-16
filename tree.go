@@ -134,7 +134,7 @@ func (t *Tree[K, V, Cmp]) updateCounts(loc ptrLocation[K, V]) {
 // Time complexity: O(logn).
 func (t *Tree[K, V, Cmp]) Find(k K) (v V, found bool) {
 	loc, dir := t.locate(k)
-	if dir != dirCenter {
+	if dir != dirCenter || loc.isNil() {
 		return v, false
 	}
 	return loc.value(), true

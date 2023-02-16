@@ -10,6 +10,38 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestEmptyTree(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int](WithCountChildren(true))
+	it := tree.AscendFromStart()
+	k, v, ok := it.Next()
+	a.Equal(0, k)
+	a.Equal(0, v)
+	a.Equal(false, ok)
+	v, ok = tree.Delete(0)
+	a.Equal(0, v)
+	a.Equal(false, ok)
+	it = tree.DescendFromEnd()
+	k, v, ok = it.Prev()
+	a.Equal(0, k)
+	a.Equal(0, v)
+	a.Equal(false, ok)
+	v, ok = tree.Find(0)
+	a.Equal(0, v)
+	a.Equal(false, ok)
+	k, v, ok = tree.Max()
+	a.Equal(0, k)
+	a.Equal(0, v)
+	a.Equal(false, ok)
+	k, v, ok = tree.Min()
+	a.Equal(0, k)
+	a.Equal(0, v)
+	a.Equal(false, ok)
+	a.Zero(tree.Len())
+	tree.Clear()
+	a.Zero(tree.Len())
+}
+
 func TestTreeInsert(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
