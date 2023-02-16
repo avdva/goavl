@@ -67,3 +67,19 @@ func prevLocation[K, V any](loc ptrLocation[K, V]) ptrLocation[K, V] {
 		}
 	}
 }
+
+func advance[K, V any](loc ptrLocation[K, V], count int) ptrLocation[K, V] {
+	for count > 0 {
+		loc = nextLocation(loc)
+		count--
+	}
+	return loc
+}
+
+func advanceBack[K, V any](loc ptrLocation[K, V], count int) ptrLocation[K, V] {
+	for count > 0 {
+		loc = prevLocation(loc)
+		count--
+	}
+	return loc
+}

@@ -9,7 +9,7 @@ func ExampleTree() {
 	// Note that the comparator is a third generic argument.
 	// It allows Go compiler (but not forces it) to inline the comparator.
 	var _ *Tree[string, string, func(a, b string) int]
-	// if you use New(), the third generic argument can be ommited.
+	// if you use New(), the third generic argument can be omitted.
 	// in the options we specify `WithCountChildren` allowing `At` operation.
 	tree := New[string, string](func(a, b string) int {
 		if a < b {
