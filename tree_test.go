@@ -113,7 +113,43 @@ func TestTreeDelete(t *testing.T) {
 	a.Equal(0, tree.Len())
 }
 
-func TestTreeAt(t *testing.T) {
+func TestTreeDeleteMin(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int](WithCountChildren(true))
+	for i := 0; i < 128; i++ {
+		a.Truef(tree.Insert(i, i), "k: %v", i)
+	}
+	for i := 0; i < 128; i++ {
+		k, v, found := tree.Min()
+		a.True(found)
+		a.Equal(i, k)
+		a.Equal(i, v)
+		v, found = tree.Delete(k)
+		a.True(found)
+		a.Equal(i, v)
+	}
+	a.Equal(0, tree.Len())
+}
+
+func TestTreeDeleteMax(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int](WithCountChildren(true))
+	for i := 0; i < 128; i++ {
+		a.Truef(tree.Insert(i, i), "k: %v", i)
+	}
+	for i := 0; i < 128; i++ {
+		k, v, found := tree.Max()
+		a.True(found)
+		a.Equal(127-i, k)
+		a.Equal(127-i, v)
+		v, found = tree.Delete(k)
+		a.True(found)
+		a.Equal(127-i, v)
+	}
+	a.Equal(0, tree.Len())
+}
+
+func TestTreeAt_WithCountChildren(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
 	for i := 0; i < 128; i++ {
@@ -127,10 +163,21 @@ func TestTreeAt(t *testing.T) {
 	a.Panics(func() {
 		tree.At(128)
 	})
+}
+
+func TestTreeAt_WithoutCountChildren(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int](WithCountChildren(false))
+	for i := 0; i < 128; i++ {
+		a.Truef(tree.Insert(i, i), "k: %v", i)
+	}
+	for i := 0; i < 128; i++ {
+		k, v := tree.At(i)
+		a.Equal(i, k)
+		a.Equal(i, v)
+	}
 	a.Panics(func() {
-		tree := NewComparable[int, int](WithCountChildren(false))
-		tree.Insert(0, 0)
-		tree.At(0)
+		tree.At(128)
 	})
 }
 
@@ -290,7 +337,7 @@ func recalcHeightAndBalance[K, V any](l ptrLocation[K, V]) (height uint8, lCount
 		if err != nil {
 			return 0, 0, 0, err
 		}
-		height = uint8Max(height, 1+rHeight)
+		height = max(height, 1+rHeight)
 		rCount = rlCount + rrCount + 1
 	}
 	if height != l.height() {

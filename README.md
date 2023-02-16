@@ -4,6 +4,7 @@ An [AVL tree](https://en.wikipedia.org/wiki/AVL_tree) implementation in Go.
 ## Badges
 
 ![Build Status](https://github.com/avdva/goavl/workflows/golangci-lint/badge.svg)
+[![Go Report Card](https://goreportcard.com/badge/github.com/avdva/goavl)](https://goreportcard.com/report/github.com/avdva/goavl)
 
 ## Installation
 
@@ -30,13 +31,13 @@ search:
 Find(k K) (v V, found bool) // finds a value for given key.
 Min() (k K, v V, found bool) // returns the minimal element of the array.
 Max() (k K, v V, found bool) // returns the maximal element of the array.
-At(position int) (k K, v V) // returns the ith element. WithCountChildren must be set to true.
+At(position int) (k K, v V) // returns the ith element.
 Len() // returns the number of elements.
 
 modify:
 Insert(k K, v V) (inserted bool) // inserts a k,v pair.
 Delete(k K) (v V, deleted bool) // deletes a value.
-DeleteAt(position int) (v V) // deletes the ith element. WithCountChildren must be set to true.
+DeleteAt(position int) (v V) // deletes the ith element.
 Clear() // deletes all the elements.
 
 iterate:

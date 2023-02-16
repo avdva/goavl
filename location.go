@@ -132,7 +132,7 @@ func (l *ptrLocation[K, V]) recalcHeight() (heightChanged bool) {
 		height = 1 + l.height()
 	}
 	if r := l.right(); !r.isNil() {
-		height = uint8Max(height, 1+r.height())
+		height = max(height, 1+r.height())
 	}
 	heightChanged = height != l.height()
 	l.setHeight(height)
@@ -170,11 +170,4 @@ func (l *ptrLocation[K, V]) String() string {
 	}
 	return fmt.Sprintf("{k: %v, v: %v, p: %v b: %d, h: %d, l: %d, r: %d}",
 		l.ptrNode.k, l.ptrNode.v, parentKey, l.balance(), l.height(), l.leftCount(), l.rightCount())
-}
-
-func uint8Max(a, b uint8) uint8 {
-	if a > b {
-		return a
-	}
-	return b
 }

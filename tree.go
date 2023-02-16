@@ -9,7 +9,10 @@ type Option func(o *Options)
 
 // Options defines some tree's parameters.
 type Options struct {
-	CountChildren bool
+	// countChildren, if set, enables children counts for every node of the tree.
+	// the numbers of children in the left and right subtrees allows to locate
+	// a node by its position with a guaranteed complexity O(logn).
+	countChildren bool
 }
 
 // WithCountChildren is used to set CountChildren option.
@@ -17,7 +20,7 @@ type Options struct {
 // This enables usage of the `At` function.
 func WithCountChildren(count bool) Option {
 	return func(o *Options) {
-		o.CountChildren = count
+		o.countChildren = count
 	}
 }
 
@@ -56,6 +59,9 @@ type Tree[K, V any, Cmp func(a, b K) int] struct {
 func New[K, V any, Cmp func(a, b K) int](cmp Cmp, opts ...Option) *Tree[K, V, Cmp] {
 	result := &Tree[K, V, Cmp]{
 		cmp: cmp,
+		options: Options{
+			countChildren: false,
+		},
 	}
 	for _, o := range opts {
 		o(&result.options)
@@ -100,7 +106,7 @@ func (t *Tree[K, V, Cmp]) Insert(k K, v V) (inserted bool) {
 			t.max = newNode
 		}
 		if loc.recalcHeight() {
-			if t.options.CountChildren {
+			if t.options.countChildren {
 				loc.recalcCounts()
 			}
 			t.checkBalance(loc.parent(), false)
@@ -115,7 +121,7 @@ func (t *Tree[K, V, Cmp]) Insert(k K, v V) (inserted bool) {
 }
 
 func (t *Tree[K, V, Cmp]) updateCounts(loc ptrLocation[K, V]) {
-	if !t.options.CountChildren {
+	if !t.options.countChildren {
 		return
 	}
 	for !loc.isNil() {
@@ -157,19 +163,30 @@ func (t *Tree[K, V, Cmp]) Max() (k K, v V, found bool) {
 }
 
 // At returns a (key, value) pair at the ith position of the sorted array.
-// Panics if position >= tree.Len() or children node counts are not enabled for this tree.
-// Time complexity: O(logn).
+// Panics if position >= tree.Len().
+// Time complexity:
+//
+//	O(logn) - if children node counts are enabled.
+//	O(n) - otherwise.
 func (t *Tree[K, V, Cmp]) At(position int) (k K, v V) {
 	node := t.locateAt(position)
 	return node.key(), node.value()
+}
+
+func (t *Tree[K, V, Cmp]) shouldLocateAtLineary(position int) bool {
+	position = min(position, t.length-position-1)
+	return position <= 8
 }
 
 func (t *Tree[K, V, Cmp]) locateAt(position int) ptrLocation[K, V] {
 	if position < 0 || position >= t.Len() {
 		panic("index out of range")
 	}
-	if !t.options.CountChildren {
-		panic("unsupported operation")
+	if !t.options.countChildren || t.shouldLocateAtLineary(position) {
+		if position < t.length/2 {
+			return advance(t.min, position)
+		}
+		return advanceBack(t.max, t.length-position-1)
 	}
 	node := t.root
 	for {
@@ -200,8 +217,11 @@ func (t *Tree[K, V, Cmp]) Delete(k K) (v V, deleted bool) {
 }
 
 // DeleteAt deletes a node at the given position.
-// Returns node's value. Panics if position >= tree.Len() or children node counts are not enabled for this tree.
-// Time complexity: O(logn).
+// Returns node's value. Panics if position >= tree.Len().
+// Time complexity:
+//
+//	O(logn) - if children node counts are enabled.
+//	O(n) - otherwise.
 func (t *Tree[K, V, Cmp]) DeleteAt(position int) (v V) {
 	loc := t.locateAt(position)
 	v = loc.value()
@@ -231,6 +251,12 @@ func (t *Tree[K, V, Cmp]) findReplacement(loc ptrLocation[K, V]) ptrLocation[K, 
 func (t *Tree[K, V, Cmp]) deleteAndReplace(loc ptrLocation[K, V]) {
 	replacement := t.findReplacement(loc)
 	parent, dir := loc.parentAndDir()
+	if loc == t.min {
+		t.min = nextLocation(loc)
+	}
+	if loc == t.max {
+		t.max = prevLocation(loc)
+	}
 	if replacement.isNil() {
 		if parent.isNil() {
 			// the last element. the tree is now empty.
@@ -417,7 +443,7 @@ func (t *Tree[K, V, Cmp]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
 				t.updateCounts(loc)
 				return
 			}
-			if t.options.CountChildren {
+			if t.options.countChildren {
 				loc.recalcCounts()
 			}
 		}
@@ -441,7 +467,7 @@ func (t *Tree[K, V, Cmp]) rr(loc ptrLocation[K, V]) {
 	loc.recalcHeight()
 	left.recalcHeight()
 
-	if t.options.CountChildren {
+	if t.options.countChildren {
 		loc.recalcCounts()
 		left.recalcCounts()
 	}
@@ -471,7 +497,7 @@ func (t *Tree[K, V, Cmp]) lr(loc ptrLocation[K, V]) {
 	left.recalcHeight()
 	leftRight.recalcHeight()
 
-	if t.options.CountChildren {
+	if t.options.countChildren {
 		loc.recalcCounts()
 		left.recalcCounts()
 		leftRight.recalcCounts()
@@ -502,7 +528,7 @@ func (t *Tree[K, V, Cmp]) rl(loc ptrLocation[K, V]) {
 	right.recalcHeight()
 	rightLeft.recalcHeight()
 
-	if t.options.CountChildren {
+	if t.options.countChildren {
 		loc.recalcCounts()
 		right.recalcCounts()
 		rightLeft.recalcCounts()
@@ -524,7 +550,7 @@ func (t *Tree[K, V, Cmp]) ll(loc ptrLocation[K, V]) {
 	loc.recalcHeight()
 	right.recalcHeight()
 
-	if t.options.CountChildren {
+	if t.options.countChildren {
 		loc.recalcCounts()
 		right.recalcCounts()
 	}
