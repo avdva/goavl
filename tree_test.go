@@ -217,13 +217,17 @@ func TestTreeDeleteAt(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
 	for i := 0; i < 128; i++ {
-		a.Truef(tree.Insert(i, i), "k: %v", i)
+		a.Truef(tree.Insert(i*2, i), "k: %v", i)
 	}
 	for i := 64; i < 128; i++ {
-		a.Equal(i, tree.DeleteAt(64))
+		k, v := tree.DeleteAt(64)
+		a.Equal(i*2, k)
+		a.Equal(i, v)
 	}
 	for i := 0; i < 64; i++ {
-		a.Equal(i, tree.DeleteAt(0))
+		k, v := tree.DeleteAt(0)
+		a.Equal(i*2, k)
+		a.Equal(i, v)
 	}
 	a.Equal(0, tree.Len())
 	a.Panics(func() {

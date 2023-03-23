@@ -222,11 +222,12 @@ func (t *Tree[K, V, Cmp]) Delete(k K) (v V, deleted bool) {
 //
 //	O(logn) - if children node counts are enabled.
 //	O(n) - otherwise.
-func (t *Tree[K, V, Cmp]) DeleteAt(position int) (v V) {
+func (t *Tree[K, V, Cmp]) DeleteAt(position int) (k K, v V) {
 	loc := t.locateAt(position)
+	k = loc.key()
 	v = loc.value()
 	t.deleteAndReplace(loc)
-	return v
+	return k, v
 }
 
 func (t *Tree[K, V, Cmp]) findReplacement(loc ptrLocation[K, V]) ptrLocation[K, V] {
