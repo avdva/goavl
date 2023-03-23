@@ -37,7 +37,7 @@ Len() // returns the number of elements.
 modify:
 Insert(k K, v V) (inserted bool) // inserts a k,v pair.
 Delete(k K) (v V, deleted bool) // deletes a value.
-DeleteAt(position int) (v V) // deletes the ith element.
+DeleteAt(position int) (k K, v V) // deletes the ith element.
 Clear() // deletes all the elements.
 
 iterate:
