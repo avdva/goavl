@@ -7,7 +7,7 @@ import (
 // Option is a function type used to configure tree's behavior.
 type Option func(o *Options)
 
-// Options defines some tree's parameters.
+// Options defines some parameters of the tree.
 type Options struct {
 	// countChildren, if set, enables children counts for every node of the tree.
 	// the numbers of children in the left and right subtrees allows to locate
@@ -190,7 +190,7 @@ func (t *Tree[K, V, Cmp]) locateAt(position int) ptrLocation[K, V] {
 	}
 	node := t.root
 	for {
-		leftCount := int(node.leftCount())
+		leftCount := int(node.leftChildrenCount())
 		switch {
 		case position == leftCount:
 			return node
@@ -337,7 +337,7 @@ func (t *Tree[K, V, Cmp]) Len() int {
 	return t.length
 }
 
-// AscendFromStart returns an iterator pointing to the smallest element.
+// AscendFromStart returns an iterator pointing to the minimum element.
 func (t *Tree[K, V, Cmp]) AscendFromStart() Iterator[K, V] {
 	return Iterator[K, V]{
 		head: t.min,
@@ -346,7 +346,7 @@ func (t *Tree[K, V, Cmp]) AscendFromStart() Iterator[K, V] {
 	}
 }
 
-// DescendFromEnd returns an iterator pointing to the largest element.
+// DescendFromEnd returns an iterator pointing to the maximum element.
 func (t *Tree[K, V, Cmp]) DescendFromEnd() Iterator[K, V] {
 	return Iterator[K, V]{
 		head: t.min,
