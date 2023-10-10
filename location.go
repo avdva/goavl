@@ -140,15 +140,14 @@ func (l *ptrLocation[K, V]) recalcHeight() (heightChanged bool) {
 }
 
 func (l *ptrLocation[K, V]) recalcCounts() {
-	var leftCount, rightCount uint32
+	var nchild uint32
 	if left := l.left(); !left.isNil() {
-		leftCount = 1 + left.childCount()
+		nchild += 1 + left.childrenCount()
 	}
 	if right := l.right(); !right.isNil() {
-		rightCount = 1 + right.childCount()
+		nchild += 1 + right.childrenCount()
 	}
-	l.setLeftNodes(leftCount)
-	l.setRightNodes(rightCount)
+	l.setChildrenCount(nchild)
 }
 
 func (l *ptrLocation[K, V]) parent() ptrLocation[K, V] {
@@ -163,11 +162,18 @@ func (l *ptrLocation[K, V]) left() ptrLocation[K, V] {
 	return l.ptrNode.left
 }
 
+func (l *ptrLocation[K, V]) leftChildrenCount() uint32 {
+	if l := l.left(); !l.isNil() {
+		return 1 + l.childrenCount()
+	}
+	return 0
+}
+
 func (l *ptrLocation[K, V]) String() string {
 	var parentKey K
 	if p := l.parent(); !p.isNil() {
 		parentKey = p.key()
 	}
-	return fmt.Sprintf("{k: %v, v: %v, p: %v b: %d, h: %d, l: %d, r: %d}",
-		l.ptrNode.k, l.ptrNode.v, parentKey, l.balance(), l.height(), l.leftCount(), l.rightCount())
+	return fmt.Sprintf("{k: %v, v: %v, p: %v b: %d, h: %d, c: %d}",
+		l.ptrNode.k, l.ptrNode.v, parentKey, l.balance(), l.height(), l.childrenCount())
 }

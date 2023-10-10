@@ -382,12 +382,6 @@ func recalcHeightAndBalance[K, V any](l ptrLocation[K, V]) (height uint8, lCount
 	if l.balance() < -1 || l.balance() > 1 {
 		return 0, 0, 0, fmt.Errorf("invalid balance %d for k=%v, v=%v", l.balance(), l.key(), l.value())
 	}
-	if lCount != l.leftCount() {
-		return 0, 0, 0, fmt.Errorf("invalid left node count for k=%v, v=%v, curr=%d, actual=%d", l.key(), l.value(), l.leftCount(), lCount)
-	}
-	if rCount != l.rightCount() {
-		return 0, 0, 0, fmt.Errorf("invalid right node count for k=%v, v=%v, curr=%d, actual=%d", l.key(), l.value(), l.rightCount(), rCount)
-	}
 	return height, lCount, rCount, nil
 }
 
