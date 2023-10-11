@@ -28,16 +28,16 @@ New[int, int](intCmp, WithCountChildren(true)) // creates a new int --> int tree
 NewComparable[int, int]() // Works for the keys that satisfy constraints.Ordered. 
 
 search:
-Find(k K) (v V, found bool) // finds a value for given key.
-Min() (k K, v V, found bool) // returns the minimal element of the array.
-Max() (k K, v V, found bool) // returns the maximal element of the array.
-At(position int) (k K, v V) // returns the ith element.
-Len() // returns the number of elements.
+Find(k K) (v *V, found bool) // finds a value for given key.
+Min() (entry Entry[K, V], found bool) // returns the minimum element of the array.
+Max() (entry Entry[K, V], found bool) // returns the maximum element of the array.
+At(position int) Entry[K, V] // returns the i'th element.
+Len() int // returns the number of elements.
 
 modify:
-Insert(k K, v V) (inserted bool) // inserts a k,v pair.
+Insert(k K, v V) (inserted bool) // inserts a kv pair.
 Delete(k K) (v V, deleted bool) // deletes a value.
-DeleteAt(position int) (k K, v V) // deletes the ith element.
+DeleteAt(position int) (k K, v V) // deletes the i'th element.
 Clear() // deletes all the elements.
 
 iterate:

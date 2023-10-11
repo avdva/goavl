@@ -27,8 +27,8 @@ func (n *node[K, V]) key() K {
 	return n.k
 }
 
-func (n *node[K, V]) value() V {
-	return n.v
+func (n *node[K, V]) valuePtr() *V {
+	return &n.v
 }
 
 func (n *node[K, V]) setValue(v V) {

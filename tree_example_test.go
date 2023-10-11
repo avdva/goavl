@@ -30,28 +30,28 @@ func ExampleTree() {
 	fmt.Println("tree, normal order")
 	fwdIt := tree.AscendFromStart()
 	for {
-		k, v, ok := fwdIt.Next()
+		e, ok := fwdIt.Next()
 		if !ok {
 			break
 		}
-		fmt.Printf("k: %s, v: %s\n", k, v)
+		fmt.Printf("k: %s, v: %s\n", e.Key, *e.Value)
 	}
 	// print tree, descending
 	fmt.Println("tree, reverse order")
 	revIt := tree.DescendFromEnd()
 	for {
-		k, v, ok := revIt.Prev()
+		e, ok := revIt.Prev()
 		if !ok {
 			break
 		}
-		fmt.Printf("k: %s, v: %s\n", k, v)
+		fmt.Printf("k: %s, v: %s\n", e.Key, *e.Value)
 	}
 	v, found := tree.Find("b")
 	if found {
-		fmt.Printf("the value for 'b' is '%s'\n", v)
+		fmt.Printf("the value for 'b' is '%s'\n", *v)
 	}
-	k, v := tree.At(2)
-	fmt.Printf("the kv at position 2 is %s: %s", k, v)
+	e := tree.At(2)
+	fmt.Printf("the kv at position 2 is %s: %s", e.Key, *e.Value)
 	// Output: tree, normal order
 	//k: a, v: a
 	//k: b, v: b
@@ -77,11 +77,11 @@ func ExampleNewComparable() {
 	fmt.Println("tree, normal order")
 	fwdIt := tree.AscendFromStart()
 	for {
-		k, v, ok := fwdIt.Next()
+		e, ok := fwdIt.Next()
 		if !ok {
 			break
 		}
-		fmt.Printf("k: %d, v: %d\n", k, v)
+		fmt.Printf("k: %d, v: %d\n", e.Key, *e.Value)
 	}
 	// Output: tree, normal order
 	//k: 1, v: 1

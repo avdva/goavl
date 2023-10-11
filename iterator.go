@@ -10,36 +10,36 @@ type Iterator[K, V any] struct {
 	state           uint8
 }
 
-func (it *Iterator[K, V]) Next() (k K, v V, ok bool) {
+func (it *Iterator[K, V]) Next() (entry Entry[K, V], found bool) {
 	if it.loc.isNil() {
 		if it.state == itStateBeforeHead && !it.head.isNil() {
 			it.loc = it.head
 		} else {
-			return k, v, ok
+			return entry, false
 		}
 	}
-	k, v, ok = it.loc.key(), it.loc.value(), true
+	entry.Key, entry.Value = it.loc.key(), it.loc.valuePtr()
 	it.loc = nextLocation(it.loc)
 	if it.loc.isNil() {
 		it.state = itStateAfterEnd
 	}
-	return k, v, ok
+	return entry, true
 }
 
-func (it *Iterator[K, V]) Prev() (k K, v V, ok bool) {
+func (it *Iterator[K, V]) Prev() (entry Entry[K, V], found bool) {
 	if it.loc.isNil() {
 		if it.state == itStateAfterEnd && !it.tail.isNil() {
 			it.loc = it.tail
 		} else {
-			return k, v, ok
+			return entry, false
 		}
 	}
-	k, v, ok = it.loc.key(), it.loc.value(), true
+	entry.Key, entry.Value = it.loc.key(), it.loc.valuePtr()
 	it.loc = prevLocation(it.loc)
 	if it.loc.isNil() {
 		it.state = itStateBeforeHead
 	}
-	return k, v, ok
+	return entry, true
 }
 
 func nextLocation[K, V any](loc ptrLocation[K, V]) ptrLocation[K, V] {
