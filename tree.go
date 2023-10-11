@@ -130,36 +130,42 @@ func (t *Tree[K, V, Cmp]) updateCounts(loc ptrLocation[K, V]) {
 	}
 }
 
+// Entry is a pair of a key and a pointer to the value.
+type Entry[K, V any] struct {
+	Key   K
+	Value *V
+}
+
 // Find returns a value for key k.
 // Time complexity: O(logn).
-func (t *Tree[K, V, Cmp]) Find(k K) (v V, found bool) {
+func (t *Tree[K, V, Cmp]) Find(k K) (v *V, found bool) {
 	loc, dir := t.locate(k)
 	if dir != dirCenter || loc.isNil() {
 		return v, false
 	}
-	return loc.value(), true
+	return loc.valuePtr(), true
 }
 
 // Min returns the minimum of the tree.
 // If the tree is empty, `found` value will be false.
 // Time complexity: O(1).
-func (t *Tree[K, V, Cmp]) Min() (k K, v V, found bool) {
+func (t *Tree[K, V, Cmp]) Min() (entry Entry[K, V], found bool) {
 	if found = !t.min.isNil(); found {
-		k = t.min.key()
-		v = t.min.value()
+		entry.Key = t.min.key()
+		entry.Value = t.min.valuePtr()
 	}
-	return k, v, found
+	return entry, found
 }
 
 // Max returns the maximum of the tree.
 // If the tree is empty, `found` value will be false.
 // Time complexity: O(1).
-func (t *Tree[K, V, Cmp]) Max() (k K, v V, found bool) {
+func (t *Tree[K, V, Cmp]) Max() (entry Entry[K, V], found bool) {
 	if found = !t.max.isNil(); found {
-		k = t.max.key()
-		v = t.max.value()
+		entry.Key = t.max.key()
+		entry.Value = t.max.valuePtr()
 	}
-	return k, v, found
+	return entry, found
 }
 
 // At returns a (key, value) pair at the ith position of the sorted array.
@@ -168,12 +174,12 @@ func (t *Tree[K, V, Cmp]) Max() (k K, v V, found bool) {
 //
 //	O(logn) - if children node counts are enabled.
 //	O(n) - otherwise.
-func (t *Tree[K, V, Cmp]) At(position int) (k K, v V) {
+func (t *Tree[K, V, Cmp]) At(position int) Entry[K, V] {
 	node := t.locateAt(position)
-	return node.key(), node.value()
+	return Entry[K, V]{Key: node.key(), Value: node.valuePtr()}
 }
 
-func (t *Tree[K, V, Cmp]) shouldLocateAtLineary(position int) bool {
+func (t *Tree[K, V, Cmp]) shouldLocateAtLinearly(position int) bool {
 	position = min(position, t.length-position-1)
 	return position <= 8
 }
@@ -182,7 +188,7 @@ func (t *Tree[K, V, Cmp]) locateAt(position int) ptrLocation[K, V] {
 	if position < 0 || position >= t.Len() {
 		panic("index out of range")
 	}
-	if !t.options.countChildren || t.shouldLocateAtLineary(position) {
+	if !t.options.countChildren || t.shouldLocateAtLinearly(position) {
 		if position < t.length/2 {
 			return advance(t.min, position)
 		}
@@ -211,7 +217,7 @@ func (t *Tree[K, V, Cmp]) Delete(k K) (v V, deleted bool) {
 	if dir != dirCenter || loc.isNil() {
 		return v, false
 	}
-	v = loc.value()
+	v = *loc.valuePtr()
 	t.deleteAndReplace(loc)
 	return v, true
 }
@@ -225,7 +231,7 @@ func (t *Tree[K, V, Cmp]) Delete(k K) (v V, deleted bool) {
 func (t *Tree[K, V, Cmp]) DeleteAt(position int) (k K, v V) {
 	loc := t.locateAt(position)
 	k = loc.key()
-	v = loc.value()
+	v = *loc.valuePtr()
 	t.deleteAndReplace(loc)
 	return k, v
 }
