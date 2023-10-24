@@ -77,11 +77,12 @@ func ExampleNewComparable() {
 	fmt.Println("tree, normal order")
 	fwdIt := tree.AscendFromStart()
 	for {
-		e, ok := fwdIt.Next()
+		e, ok := fwdIt.Value()
 		if !ok {
 			break
 		}
 		fmt.Printf("k: %d, v: %d\n", e.Key, *e.Value)
+		fwdIt.Next()
 	}
 	// Output: tree, normal order
 	//k: 1, v: 1
