@@ -295,6 +295,38 @@ func TestTreeIterator(t *testing.T) {
 	}
 }
 
+func TestTreeIteratorValue(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int](WithCountChildren(true))
+	for i := 0; i < 128; i++ {
+		a.Truef(tree.Insert(i, i), "k: %v", i)
+	}
+	it := tree.AscendFromStart()
+	for i := 0; ; i++ {
+		e, ok := it.Value()
+		if i == 128 {
+			a.False(ok)
+			break
+		}
+		a.True(ok)
+		a.Equal(i, e.Key)
+		a.Equal(i, *e.Value)
+		it.Next()
+	}
+	it = tree.DescendFromEnd()
+	for i := 127; ; i-- {
+		e, ok := it.Value()
+		if i == -1 {
+			a.False(ok)
+			break
+		}
+		a.True(ok)
+		a.Equal(i, e.Key)
+		a.Equal(i, *e.Value)
+		it.Prev()
+	}
+}
+
 func TestTreeAscend(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int]()

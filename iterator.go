@@ -5,11 +5,22 @@ const (
 	itStateAfterEnd
 )
 
+// Iterator allows to iterate over a tree in ascending or descending order.
 type Iterator[K, V any] struct {
 	loc, head, tail ptrLocation[K, V]
 	state           uint8
 }
 
+// Value returns current value and true, if the value is valid.
+func (it *Iterator[K, V]) Value() (entry Entry[K, V], found bool) {
+	if !it.loc.isNil() {
+		found = true
+		entry.Key, entry.Value = it.loc.key(), it.loc.valuePtr()
+	}
+	return entry, found
+}
+
+// Next returns current entry and advances the iterator.
 func (it *Iterator[K, V]) Next() (entry Entry[K, V], found bool) {
 	if it.loc.isNil() {
 		if it.state == itStateBeforeHead && !it.head.isNil() {
@@ -26,6 +37,7 @@ func (it *Iterator[K, V]) Next() (entry Entry[K, V], found bool) {
 	return entry, true
 }
 
+// Prev returns current entry and moves to the previous one.
 func (it *Iterator[K, V]) Prev() (entry Entry[K, V], found bool) {
 	if it.loc.isNil() {
 		if it.state == itStateAfterEnd && !it.tail.isNil() {
