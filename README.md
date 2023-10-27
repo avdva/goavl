@@ -35,7 +35,7 @@ At(position int) Entry[K, V] // returns the i'th element.
 Len() int // returns the number of elements.
 
 modify:
-Insert(k K, v V) (inserted bool) // inserts a kv pair.
+Insert(k K, v V) (v *V, inserted bool) // inserts a kv pair.
 Delete(k K) (v V, deleted bool) // deletes a value.
 DeleteAt(position int) (k K, v V) // deletes the i'th element.
 Clear() // deletes all the elements.

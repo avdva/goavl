@@ -46,7 +46,9 @@ func TestTreeInsert(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
 	for i := 0; i < 128; i++ {
-		a.Truef(tree.Insert(i, i), "k: %v", i)
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.Truef(inserted, "k: %v", i)
 		e, found := tree.Min()
 		a.Equal(0, e.Key)
 		a.Equal(0, *e.Value)
@@ -65,7 +67,9 @@ func TestTreeInsert(t *testing.T) {
 	}
 
 	for i := 127; i >= 0; i-- {
-		a.Falsef(tree.Insert(i, i*2), "k: %v", i)
+		ptr, inserted := tree.Insert(i, i*2)
+		a.Equal(i*2, *ptr)
+		a.Falsef(inserted, "k: %v", i)
 		a.NoError(checkHeightAndBalance(tree.root))
 	}
 	for i := 127; i >= 0; i-- {
@@ -80,7 +84,9 @@ func TestTreeDelete(t *testing.T) {
 	tree := NewComparable[int, int](WithCountChildren(true))
 	a.Equal(0, tree.Len())
 
-	a.True(tree.Insert(0, 0))
+	ptr, inserted := tree.Insert(0, 0)
+	a.Equal(0, *ptr)
+	a.True(inserted)
 	v, deleted := tree.Delete(0)
 	a.True(deleted)
 	a.Equal(0, v)
@@ -88,8 +94,12 @@ func TestTreeDelete(t *testing.T) {
 	a.True(tree.root.isNil())
 	a.NoError(checkHeightAndBalance(tree.root))
 
-	a.True(tree.Insert(0, 0))
-	a.True(tree.Insert(-1, -1))
+	ptr, inserted = tree.Insert(0, 0)
+	a.Equal(0, *ptr)
+	a.True(inserted)
+	ptr, inserted = tree.Insert(-1, -1)
+	a.Equal(-1, *ptr)
+	a.True(inserted)
 	a.Equal(2, tree.Len())
 	a.NoError(checkHeightAndBalance(tree.root))
 	v, deleted = tree.Delete(0)
@@ -99,8 +109,12 @@ func TestTreeDelete(t *testing.T) {
 	a.Equal(-1, v)
 	a.True(deleted)
 
-	a.True(tree.Insert(0, 0))
-	a.True(tree.Insert(1, 1))
+	ptr, inserted = tree.Insert(0, 0)
+	a.Equal(0, *ptr)
+	a.True(inserted)
+	ptr, inserted = tree.Insert(1, 1)
+	a.Equal(1, *ptr)
+	a.True(inserted)
 	a.Equal(2, tree.Len())
 	a.NoError(checkHeightAndBalance(tree.root))
 	v, deleted = tree.Delete(1)
@@ -117,8 +131,12 @@ func TestTreeDelete(t *testing.T) {
 	a.True(tree.root.isNil())
 	a.NoError(checkHeightAndBalance(tree.root))
 
-	a.True(tree.Insert(0, 0))
-	a.True(tree.Insert(1, 1))
+	ptr, inserted = tree.Insert(0, 0)
+	a.Equal(0, *ptr)
+	a.True(inserted)
+	ptr, inserted = tree.Insert(1, 1)
+	a.Equal(1, *ptr)
+	a.True(inserted)
 	a.NoError(checkHeightAndBalance(tree.root))
 	v, deleted = tree.Delete(0)
 	a.True(deleted)
@@ -133,7 +151,9 @@ func TestTreeDelete(t *testing.T) {
 	a.NoError(checkHeightAndBalance(tree.root))
 
 	for i := 128; i <= 0; i-- {
-		a.True(tree.Insert(i, i))
+		ptr, inserted = tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
 		a.NoError(checkHeightAndBalance(tree.root))
 	}
 	for i := 128; i <= 0; i-- {
@@ -149,7 +169,9 @@ func TestTreeDeleteMin(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
 	for i := 0; i < 128; i++ {
-		a.Truef(tree.Insert(i, i), "k: %v", i)
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
 	}
 	for i := 0; i < 128; i++ {
 		e, found := tree.Min()
@@ -167,7 +189,9 @@ func TestTreeDeleteMax(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
 	for i := 0; i < 128; i++ {
-		a.Truef(tree.Insert(i, i), "k: %v", i)
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
 	}
 	for i := 0; i < 128; i++ {
 		e, found := tree.Max()
@@ -185,7 +209,9 @@ func TestTreeAt_WithCountChildren(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
 	for i := 0; i < 128; i++ {
-		a.Truef(tree.Insert(i, i), "k: %v", i)
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
 	}
 	for i := 0; i < 128; i++ {
 		e := tree.At(i)
@@ -201,7 +227,9 @@ func TestTreeAt_WithoutCountChildren(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(false))
 	for i := 0; i < 128; i++ {
-		a.Truef(tree.Insert(i, i), "k: %v", i)
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
 	}
 	for i := 0; i < 128; i++ {
 		e := tree.At(i)
@@ -217,7 +245,9 @@ func TestTreeDeleteAt(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
 	for i := 0; i < 128; i++ {
-		a.Truef(tree.Insert(i*2, i), "k: %v", i)
+		ptr, inserted := tree.Insert(i*2, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
 	}
 	for i := 64; i < 128; i++ {
 		k, v := tree.DeleteAt(64)
@@ -248,7 +278,9 @@ func TestTreeRandom(t *testing.T) {
 			data[i], data[j] = data[j], data[i]
 		})
 		for _, v := range data {
-			a.True(tree.Insert(v, v))
+			ptr, inserted := tree.Insert(v, v)
+			a.Equal(v, *ptr)
+			a.True(inserted)
 			if !a.NoError(checkHeightAndBalance(tree.root)) {
 				tree.locate(v)
 				fmt.Println(tree.Len())
@@ -270,7 +302,9 @@ func TestTreeIterator(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
 	for i := 0; i < 128; i++ {
-		a.Truef(tree.Insert(i, i), "k: %v", i)
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
 	}
 	it := tree.AscendFromStart()
 	for i := 0; ; i++ {
@@ -299,7 +333,9 @@ func TestTreeIteratorValue(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
 	for i := 0; i < 128; i++ {
-		a.Truef(tree.Insert(i, i), "k: %v", i)
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
 	}
 	it := tree.AscendFromStart()
 	for i := 0; ; i++ {
@@ -331,7 +367,9 @@ func TestTreeAscend(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int]()
 	for i := 0; i <= 100; i += 5 {
-		a.Truef(tree.Insert(i, i), "k: %v", i)
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
 	}
 	it := tree.Ascend(-1)
 	e, ok := it.Next()
@@ -359,7 +397,9 @@ func TestTreeDescend(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int]()
 	for i := 0; i <= 100; i += 5 {
-		a.Truef(tree.Insert(i, i), "k: %v", i)
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
 	}
 	it := tree.Descend(101)
 	e, ok := it.Next()
