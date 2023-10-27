@@ -85,18 +85,17 @@ func NewComparable[K constraints.Ordered, V any](opts ...Option) *Tree[K, V, fun
 }
 
 // Insert inserts a node into the tree.
-// Returns true, if a new node was added, and false otherwise.
+// Returns a pointer to the value and true, if a new node was added.
 // If the key `k` was present in the tree, node's value is updated to `v`.
 // Time complexity: O(logn).
-func (t *Tree[K, V, Cmp]) Insert(k K, v V) (inserted bool) {
+func (t *Tree[K, V, Cmp]) Insert(k K, v V) (valuePtr *V, inserted bool) {
 	loc, dir := t.locate(k)
 	if dir == dirCenter && !loc.isNil() {
 		loc.setValue(v)
-		return
+		return loc.valuePtr(), false
 	}
 	newNode := makeLocation(k, v)
 	t.length++
-	inserted = true
 	switch dir {
 	case dirLeft, dirRight:
 		loc.addChild(newNode, dir)
@@ -117,7 +116,7 @@ func (t *Tree[K, V, Cmp]) Insert(k K, v V) (inserted bool) {
 		t.root = newNode
 		t.min, t.max = t.root, t.root
 	}
-	return inserted
+	return newNode.valuePtr(), true
 }
 
 func (t *Tree[K, V, Cmp]) updateCounts(loc ptrLocation[K, V]) {

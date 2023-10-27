@@ -72,7 +72,10 @@ func ExampleNewComparable() {
 	// no need to specify a comparator for NewComparable().
 	tree := NewComparable[int, int]()
 	for _, v := range [...]int{7, 1, 3, 10, 2} {
-		tree.Insert(v, v)
+		valuePtr, inserted := tree.Insert(v, v)
+		if !inserted || *valuePtr != v {
+			panic("invalid insert result")
+		}
 	}
 	fmt.Println("tree, normal order")
 	fwdIt := tree.AscendFromStart()
