@@ -208,6 +208,21 @@ func (t *Tree[K, V, Cmp]) locateAt(position int) ptrLocation[K, V] {
 	}
 }
 
+// AscendAt returns an iterator pointing to the i'th element.
+// Panics if position >= tree.Len().
+// Time complexity:
+//
+//	O(logn) - if children node counts are enabled.
+//	O(n) - otherwise.
+func (t *Tree[K, V, Cmp]) AscendAt(position int) Iterator[K, V] {
+	loc := t.locateAt(position)
+	return Iterator[K, V]{
+		head: t.min,
+		tail: t.max,
+		loc:  loc,
+	}
+}
+
 // Delete deletes a node from the tree.
 // Returns node's value and true, if the node was present in the tree.
 // Time complexity: O(logn).

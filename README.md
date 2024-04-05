@@ -45,6 +45,7 @@ AscendFromStart() Iterator[K, V] // returns an iterator pointing to the smallest
 DescendFromEnd() Iterator[K, V] // returns an iterator pointing to the largest element.
 Ascend(from K) Iterator[K, V] // returns an iterator pointing to the element that's >= `from`.
 Descend(from K) Iterator[K, V] // returns an iterator pointing to the element that's <= `from`.
+AscendAt(position int) Iterator[K, V] // returns an iterator pointing to the i'th element.
 ```
 
 Please see the [examples](/tree_example_test.go) for more details.
