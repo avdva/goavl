@@ -393,6 +393,42 @@ func TestTreeAscend(t *testing.T) {
 	a.False(ok)
 }
 
+func TestTreeAscendAt(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int]()
+	a.Panics(func() {
+		tree.AscendAt(0)
+	})
+	for i := 0; i <= 100; i++ {
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
+	}
+	for i := 0; i <= 100; i++ {
+		it := tree.AscendAt(i)
+		e, ok := it.Value()
+		a.True(ok)
+		a.Equal(i, e.Key)
+		a.Equal(i, *e.Value)
+		for j := i - 1; j >= 0; j-- {
+			it.Prev()
+			e, ok = it.Value()
+			a.True(ok)
+			a.Equal(j, e.Key)
+			a.Equal(j, *e.Value)
+		}
+
+		it = tree.AscendAt(i)
+		for j := i + 1; j < tree.Len(); j++ {
+			it.Next()
+			e, ok = it.Value()
+			a.True(ok)
+			a.Equal(j, e.Key)
+			a.Equal(j, *e.Value)
+		}
+	}
+}
+
 func TestTreeDescend(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int]()
