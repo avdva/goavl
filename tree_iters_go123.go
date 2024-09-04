@@ -6,7 +6,7 @@ import "iter"
 
 // Mutator allows to modify values and delete keys from a tree in a for-range loop.
 // Use mut.E.K and mut.E.V to access keys and modify values.
-// Use Detele to delete current key from the tree.
+// Use Delete to delete current key from the tree.
 type Mutator[K, V any, Cmp func(a, b K) int] struct {
 	E     Entry[K, V]
 	t     *Tree[K, V, Cmp]
@@ -15,7 +15,7 @@ type Mutator[K, V any, Cmp func(a, b K) int] struct {
 }
 
 // Delete deletes the key from the tree.
-// The operation in idemponent: second Delete() call is a noop.
+// The operation is idempotent: second Delete() call is a noop.
 func (m *Mutator[K, V, Cmp]) Delete() {
 	if !m.acted {
 		m.acted = true

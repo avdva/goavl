@@ -6,7 +6,7 @@ import (
 	"fmt"
 )
 
-func ExampleGo123Iterators() {
+func ExampleTree_All() {
 	// no need to specify a comparator for NewComparable().
 	tree := NewComparable[int, int]()
 	for _, v := range [...]int{7, 1, 3, 10, 2} {
@@ -27,7 +27,7 @@ func ExampleGo123Iterators() {
 	// k: 10, v: 10
 }
 
-func ExampleGo123MutIterators() {
+func ExampleTree_AllMut() {
 	// no need to specify a comparator for NewComparable().
 	tree := NewComparable[int, int]()
 	for _, v := range [...]int{7, 1, 3, 10, 2} {
