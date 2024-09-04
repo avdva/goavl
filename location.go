@@ -51,14 +51,14 @@ func (l *ptrLocation[K, V]) parentAndDir() (parent ptrLocation[K, V], dir direct
 }
 
 func (l *ptrLocation[K, V]) balance() int8 {
-	b := int8(0)
+	b := int16(0)
 	if r := l.right(); !r.isNil() {
-		b += int8(r.height()) + 1
+		b += int16(r.height()) + 1
 	}
 	if l := l.left(); !l.isNil() {
-		b -= int8(l.height()) + 1
+		b -= int16(l.height()) + 1
 	}
-	return b
+	return int8(b)
 }
 
 func (l *ptrLocation[K, V]) setChild(child ptrLocation[K, V], dir direction) {
@@ -132,7 +132,7 @@ func (l *ptrLocation[K, V]) recalcHeight() (heightChanged bool) {
 		height = 1 + l.height()
 	}
 	if r := l.right(); !r.isNil() {
-		height = max(height, 1+r.height())
+		height = max2(height, 1+r.height())
 	}
 	heightChanged = height != l.height()
 	l.setHeight(height)

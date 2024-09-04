@@ -1,4 +1,4 @@
-//go:build !go1.23
+//go:build go1.23
 
 package goavl
 
@@ -7,15 +7,9 @@ import (
 )
 
 func max2[T constraints.Ordered](a, b T) T {
-	if a > b {
-		return a
-	}
-	return b
+	return max(a, b)
 }
 
 func min2[T constraints.Ordered](a, b T) T {
-	if a < b {
-		return a
-	}
-	return b
+	return min(a, b)
 }

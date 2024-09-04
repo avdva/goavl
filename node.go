@@ -16,7 +16,7 @@ func (n *node[K, V]) setHeight(height uint8) {
 }
 
 func (n *node[K, V]) childrenCount() uint32 {
-	return uint32(n.nchild)
+	return n.nchild
 }
 
 func (n *node[K, V]) setChildrenCount(nchild uint32) {

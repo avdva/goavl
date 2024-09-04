@@ -53,19 +53,19 @@ func ExampleTree() {
 	e := tree.At(2)
 	fmt.Printf("the kv at position 2 is %s: %s", e.Key, *e.Value)
 	// Output: tree, normal order
-	//k: a, v: a
-	//k: b, v: b
-	//k: l, v: l
-	//k: m, v: m
-	//k: z, v: z
-	//tree, reverse order
-	//k: z, v: z
-	//k: m, v: m
-	//k: l, v: l
-	//k: b, v: b
-	//k: a, v: a
-	//the value for 'b' is 'b'
-	//the kv at position 2 is l: l
+	// k: a, v: a
+	// k: b, v: b
+	// k: l, v: l
+	// k: m, v: m
+	// k: z, v: z
+	// tree, reverse order
+	// k: z, v: z
+	// k: m, v: m
+	// k: l, v: l
+	// k: b, v: b
+	// k: a, v: a
+	// the value for 'b' is 'b'
+	// the kv at position 2 is l: l
 }
 
 func ExampleNewComparable() {
@@ -88,9 +88,9 @@ func ExampleNewComparable() {
 		fwdIt.Next()
 	}
 	// Output: tree, normal order
-	//k: 1, v: 1
-	//k: 2, v: 2
-	//k: 3, v: 3
-	//k: 7, v: 7
-	//k: 10, v: 10
+	// k: 1, v: 1
+	// k: 2, v: 2
+	// k: 3, v: 3
+	// k: 7, v: 7
+	// k: 10, v: 10
 }

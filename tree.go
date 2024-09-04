@@ -55,7 +55,7 @@ type Tree[K, V any, Cmp func(a, b K) int] struct {
 //		return 0
 //	}
 //
-// tree := New[int, int](intCmp, WithCountChildren(true))
+// tree := New[int, int](intCmp, WithCountChildren(true)).
 func New[K, V any, Cmp func(a, b K) int](cmp Cmp, opts ...Option) *Tree[K, V, Cmp] {
 	result := &Tree[K, V, Cmp]{
 		cmp: cmp,
@@ -71,7 +71,7 @@ func New[K, V any, Cmp func(a, b K) int](cmp Cmp, opts ...Option) *Tree[K, V, Cm
 
 // NewComparable returns a new tree.
 // This is just a wrapper for New(), where K satisfies constraints.Ordered.
-// Example: NewComparable[int, int]()
+// Example: NewComparable[int, int]().
 func NewComparable[K constraints.Ordered, V any](opts ...Option) *Tree[K, V, func(a, b K) int] {
 	return New[K, V, func(a, b K) int](func(a, b K) int {
 		if a < b {
@@ -179,7 +179,7 @@ func (t *Tree[K, V, Cmp]) At(position int) Entry[K, V] {
 }
 
 func (t *Tree[K, V, Cmp]) shouldLocateAtLinearly(position int) bool {
-	position = min(position, t.length-position-1)
+	position = min2(position, t.length-position-1)
 	return position <= 8
 }
 
@@ -236,6 +236,30 @@ func (t *Tree[K, V, Cmp]) Delete(k K) (v V, deleted bool) {
 	return v, true
 }
 
+// DeleteIterator deletes the element referenced by the iterator.
+// Returns iterator to the next element.
+// Time complexity: O(logn).
+func (t *Tree[K, V, Cmp]) DeleteIterator(it Iterator[K, V]) Iterator[K, V] {
+	if !t.isValidloc(it.loc) {
+		return Iterator[K, V]{
+			head: ptrLocation[K, V]{},
+			tail: ptrLocation[K, V]{},
+			loc:  ptrLocation[K, V]{},
+		}
+	}
+	next := nextLocation(it.loc)
+	t.deleteAndReplace(it.loc)
+	return Iterator[K, V]{
+		head: t.min,
+		tail: t.max,
+		loc:  next,
+	}
+}
+
+func (t *Tree[K, V, Cmp]) isValidloc(loc ptrLocation[K, V]) bool {
+	return !loc.isNil()
+}
+
 // DeleteAt deletes a node at the given position.
 // Returns node's value. Panics if position >= tree.Len().
 // Time complexity:
@@ -251,20 +275,12 @@ func (t *Tree[K, V, Cmp]) DeleteAt(position int) (k K, v V) {
 }
 
 func (t *Tree[K, V, Cmp]) findReplacement(loc ptrLocation[K, V]) ptrLocation[K, V] {
-	left, right := loc.left(), loc.right()
 	var replacement ptrLocation[K, V]
-	if left.isNil() {
-		if !right.isNil() {
-			replacement = goLeft(right)
-		}
-	} else if right.isNil() {
+	left, right := loc.left(), loc.right()
+	if !left.isNil() && (right.isNil() || left.height() <= right.height()) {
 		replacement = goRight(left)
-	} else {
-		if left.height() <= right.height() { // TODO(avd) - find a better estimation
-			replacement = goRight(left)
-		} else {
-			replacement = goLeft(right)
-		}
+	} else if !right.isNil() {
+		replacement = goLeft(right)
 	}
 	return replacement
 }
