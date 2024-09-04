@@ -16,6 +16,13 @@ func TestTreeIteratorGo123(t *testing.T) {
 		a.Equal(i*2, *ptr)
 		a.True(inserted)
 	}
+
+	a.NotPanics(func() {
+		for range tree.All() {
+			break
+		}
+	})
+
 	i := 0
 	for k, v := range tree.All() {
 		a.Equal(k, i)
@@ -33,6 +40,12 @@ func TestTreeMutIteratorGo123(t *testing.T) {
 		a.Equal(i*2, *ptr)
 		a.True(inserted)
 	}
+
+	a.NotPanics(func() {
+		for range tree.AllMut() {
+			break
+		}
+	})
 
 	i := 0
 	for m := range tree.AllMut() {
