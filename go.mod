@@ -3,8 +3,8 @@ module github.com/avdva/goavl
 go 1.19
 
 require (
-	github.com/stretchr/testify v1.8.4
-	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
+	github.com/stretchr/testify v1.9.0
+	golang.org/x/exp v0.0.0-20240823005443-9b4947da3948
 )
 
 require (

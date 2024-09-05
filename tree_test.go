@@ -329,6 +329,71 @@ func TestTreeIterator(t *testing.T) {
 	}
 }
 
+func TestTreeDeleteIterator(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int]()
+	it := tree.AscendFromStart()
+	_, ok := it.Value()
+	a.False(ok)
+
+	it = tree.DeleteIterator(it)
+	_, ok = it.Value()
+	a.False(ok)
+
+	for i := 0; i < 128; i++ {
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
+	}
+	it = tree.AscendFromStart()
+	for i := 0; i < 128; i++ {
+		e, ok := it.Value()
+		a.True(ok)
+		a.Equal(i, e.Key)
+		a.Equal(i, *e.Value)
+		it = tree.DeleteIterator(it)
+	}
+	_, ok = it.Value()
+	a.False(ok)
+	a.Zero(tree.Len())
+}
+
+func TestTreeDeleteIterator2(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int]()
+	for i := 0; i < 128; i++ {
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
+	}
+	it := tree.AscendFromStart()
+	// delete all even keys
+	for i := 0; i < 64; i++ {
+		e, ok := it.Value()
+		a.True(ok)
+		a.Equal(i*2, e.Key)
+		a.Equal(i*2, *e.Value)
+		it = tree.DeleteIterator(it)
+
+		e, ok = it.Next()
+		a.True(ok)
+		a.Equal(i*2+1, e.Key)
+		a.Equal(i*2+1, *e.Value)
+	}
+	// delete all odd keys
+	it = tree.AscendFromStart()
+	for i := 0; i < 64; i++ {
+		e, ok := it.Value()
+		a.True(ok)
+		a.Equal(i*2+1, e.Key)
+		a.Equal(i*2+1, *e.Value)
+		it = tree.DeleteIterator(it)
+	}
+	_, ok := it.Value()
+	a.False(ok)
+	a.Zero(tree.Len())
+}
+
 func TestTreeIteratorValue(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
@@ -481,7 +546,7 @@ func recalcHeightAndBalance[K, V any](l ptrLocation[K, V]) (height uint8, lCount
 		if err != nil {
 			return 0, 0, 0, err
 		}
-		height = max(height, 1+rHeight)
+		height = max2(height, 1+rHeight)
 		rCount = rlCount + rrCount + 1
 	}
 	if height != l.height() {
