@@ -25,16 +25,16 @@ $ go get github.com/avdva/goavl
 
 ```go
 // Create a tree:
-//  New creates a tree with a user-defined comparator:  
+// New creates a tree with a user-defined comparator:  
 // intCmp := func(a, b int) int {
-// 		if a < b {
-// 			return -1
-// 		}
-// 		if a > b {
-// 			return 1
-// 		}
-// 		return 0
-// 	}
+//    if a < b {
+//      return -1
+//    }
+//    if a > b {
+//      return 1
+//    }
+//    return 0
+//  }
 New[int, int](intCmp, WithCountChildren(true)) {}
 //  NewComparable works for the keys that satisfy constraints.Ordered.
 NewComparable[int, int]() {}
@@ -58,9 +58,9 @@ Insert(k K, v V) (v *V, inserted bool) {}
 Delete(k K) (v V, deleted bool) {}
 // DeleteAt deletes i'th element.
 DeleteAt(position int) (k K, v V) {}
-// DeleteIterator deletes the element pointed at by it
+// DeleteIterator deletes the element pointed at by it.
 DeleteIterator(it Iterator[K, V]) {}
-// Clear deletes all the elements
+// Clear deletes all the elements.
 Clear() {}
 
 // Iterators:
