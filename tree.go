@@ -13,14 +13,25 @@ type Options struct {
 	// the numbers of children in the left and right subtrees allows to locate
 	// a node by its position with a guaranteed complexity O(logn).
 	countChildren bool
+
+	// syncPoolAllocator, if set makes Tree use sync.Pool to allocate tree nodes,
+	// which can improve performance in some use cases.
+	syncPoolAllocator bool
 }
 
 // WithCountChildren is used to set CountChildren option.
 // If set, each node will have a count of children in the left and right sub-trees.
-// This enables usage of the `At` function.
+// This enables O(logn) complexity for the functions that operate key positions.
 func WithCountChildren(count bool) Option {
 	return func(o *Options) {
 		o.countChildren = count
+	}
+}
+
+// WithSyncPoolAllocator makes Tree use sync.Pool to allocate tree nodes.
+func WithSyncPoolAllocator(with bool) Option {
+	return func(o *Options) {
+		o.syncPoolAllocator = with
 	}
 }
 
@@ -33,6 +44,7 @@ type Tree[K, V any, Cmp func(a, b K) int] struct {
 	root, min, max ptrLocation[K, V]
 	length         int
 	cmp            Cmp
+	lc             locationCache[K, V]
 }
 
 // New returns a new Tree.
@@ -66,6 +78,11 @@ func New[K, V any, Cmp func(a, b K) int](cmp Cmp, opts ...Option) *Tree[K, V, Cm
 	for _, o := range opts {
 		o(&result.options)
 	}
+	if result.options.syncPoolAllocator {
+		result.lc = newPooledLocationCache[K, V]()
+	} else {
+		result.lc = newSimpleLocationCache[K, V]()
+	}
 	return result
 }
 
@@ -94,7 +111,7 @@ func (t *Tree[K, V, Cmp]) Insert(k K, v V) (valuePtr *V, inserted bool) {
 		loc.setValue(v)
 		return loc.valuePtr(), false
 	}
-	newNode := makeLocation(k, v)
+	newNode := t.lc.new(k, v)
 	t.length++
 	switch dir {
 	case dirLeft, dirRight:
@@ -241,11 +258,7 @@ func (t *Tree[K, V, Cmp]) Delete(k K) (v V, deleted bool) {
 // Time complexity: O(logn).
 func (t *Tree[K, V, Cmp]) DeleteIterator(it Iterator[K, V]) Iterator[K, V] {
 	if !t.isValidloc(it.loc) {
-		return Iterator[K, V]{
-			head: ptrLocation[K, V]{},
-			tail: ptrLocation[K, V]{},
-			loc:  ptrLocation[K, V]{},
-		}
+		return Iterator[K, V]{}
 	}
 	next := nextLocation(it.loc)
 	t.deleteAndReplace(it.loc)
@@ -277,10 +290,20 @@ func (t *Tree[K, V, Cmp]) DeleteAt(position int) (k K, v V) {
 func (t *Tree[K, V, Cmp]) findReplacement(loc ptrLocation[K, V]) ptrLocation[K, V] {
 	var replacement ptrLocation[K, V]
 	left, right := loc.left(), loc.right()
-	if !left.isNil() && (right.isNil() || left.height() <= right.height()) {
-		replacement = goRight(left)
+	if !left.isNil() {
+		if !right.isNil() {
+			// Russell A. Brown, Optimized Deletion From an AVL Tree.
+			// https://arxiv.org/pdf/2406.05162v5
+			if loc.balance() <= 0 {
+				replacement = goRight(left)
+			} else {
+				replacement = goLeft(right)
+			}
+		} else {
+			replacement = left
+		}
 	} else if !right.isNil() {
-		replacement = goLeft(right)
+		replacement = right
 	}
 	return replacement
 }
@@ -330,6 +353,7 @@ func (t *Tree[K, V, Cmp]) deleteAndReplace(loc ptrLocation[K, V]) {
 			t.checkBalance(replacementParent, true)
 		}
 	}
+	t.lc.release(loc)
 	t.length--
 }
 

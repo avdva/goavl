@@ -1,6 +1,8 @@
 package goavl
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	dirLeft   = -1
@@ -19,16 +21,15 @@ type ptrNode[K, V any] struct {
 	left, right, parent ptrLocation[K, V]
 }
 
-type ptrLocation[K, V any] struct {
-	*ptrNode[K, V]
+func (n *ptrNode[K, V]) init(k K, v V) {
+	n.node.init(k, v)
+	n.left = ptrLocation[K, V]{}
+	n.right = ptrLocation[K, V]{}
+	n.parent = ptrLocation[K, V]{}
 }
 
-func makeLocation[K, V any](k K, v V) ptrLocation[K, V] {
-	return ptrLocation[K, V]{
-		ptrNode: &ptrNode[K, V]{
-			node: makeNode(k, v),
-		},
-	}
+type ptrLocation[K, V any] struct {
+	*ptrNode[K, V]
 }
 
 func (l ptrLocation[K, V]) isNil() bool {

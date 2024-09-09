@@ -35,9 +35,12 @@ $ go get github.com/avdva/goavl
 //    }
 //    return 0
 //  }
-New[int, int](intCmp, WithCountChildren(true)) {}
+// Options:
+//	- WithCountChildren(bool) enables O(logn) complexity for the functions that operate on element positions.
+//	- WithSyncPoolAllocator(bool) makes Tree use sync.Pool to allocate tree nodes.
+New[int, int](intCmp, WithCountChildren(true), WithSyncPoolAllocator(true)) {}
 //  NewComparable works for the keys that satisfy constraints.Ordered.
-NewComparable[int, int]() {}
+NewComparable[int, int](opts ...Option) {}
 
 // Search for elements:
 // Find finds a value for given key.
