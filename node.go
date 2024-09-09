@@ -35,9 +35,9 @@ func (n *node[K, V]) setValue(v V) {
 	n.v = v
 }
 
-func makeNode[K, V any](k K, v V) node[K, V] {
-	return node[K, V]{
-		k: k,
-		v: v,
-	}
+func (n *node[K, V]) init(k K, v V) {
+	n.k = k
+	n.v = v
+	n.h = 0
+	n.nchild = 0
 }
