@@ -290,10 +290,20 @@ func (t *Tree[K, V, Cmp]) DeleteAt(position int) (k K, v V) {
 func (t *Tree[K, V, Cmp]) findReplacement(loc ptrLocation[K, V]) ptrLocation[K, V] {
 	var replacement ptrLocation[K, V]
 	left, right := loc.left(), loc.right()
-	if !left.isNil() && (right.isNil() || left.height() <= right.height()) {
-		replacement = goRight(left)
+	if !left.isNil() {
+		if !right.isNil() {
+			// Russell A. Brown, Optimized Deletion From an AVL Tree.
+			// https://arxiv.org/pdf/2406.05162v5
+			if loc.balance() <= 0 {
+				replacement = goRight(left)
+			} else {
+				replacement = goLeft(right)
+			}
+		} else {
+			replacement = left
+		}
 	} else if !right.isNil() {
-		replacement = goLeft(right)
+		replacement = right
 	}
 	return replacement
 }
