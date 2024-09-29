@@ -472,11 +472,7 @@ func (t *Tree[K, V, Cmp]) locate(k K) (loc ptrLocation[K, V], dir direction) {
 }
 
 func (t *Tree[K, V, Cmp]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
-	for {
-		if loc.isNil() {
-			return
-		}
-		heightChanged := loc.recalcHeight()
+	for !loc.isNil() {
 		parent := loc.parent()
 		switch loc.balance() {
 		case -2:
@@ -500,7 +496,7 @@ func (t *Tree[K, V, Cmp]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
 				panic("wrong balance" + loc.String())
 			}
 		default:
-			if !heightChanged && !fullWayUp {
+			if !loc.recalcHeight() && !fullWayUp {
 				t.updateCounts(loc)
 				return
 			}
