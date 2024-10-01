@@ -9,7 +9,7 @@ An [AVL tree](https://en.wikipedia.org/wiki/AVL_tree) implementation in Go.
 
 ## Installation
 
-To start using this package, run:
+Package `goavl` requires Go 1.20+. To start, run:
 
 ```sh
 $ go get github.com/avdva/goavl
@@ -17,7 +17,7 @@ $ go get github.com/avdva/goavl
 
 ## Features
 
-- Support for Go generics (Go 1.18+).
+- Support for Go generics.
 - Forward and reverse iterators.
 - Go 1.23 style iterators support.
 - Provides an efficient way of getting items by index (if `CountChildren` is on).
@@ -38,8 +38,10 @@ $ go get github.com/avdva/goavl
 //  }
 // Options:
 //	- WithCountChildren(bool) enables O(logn) complexity for the functions that operate on element positions.
-//	- WithSyncPoolAllocator(bool) makes Tree use sync.Pool to allocate tree nodes.
-New[int, int](intCmp, WithCountChildren(true), WithSyncPoolAllocator(true)) {}
+//	- WithSyncPool(*sync.Pool) makes Tree use sync.Pool to allocate tree nodes.
+//	- WithArena(*arena.Arena) makes Tree use arenas (currently experimental) to allocate tree nodes.
+//		This requires GOEXPERIMENT=arenas to be set.
+New[int, int](intCmp, WithCountChildren(true)) {}
 //  NewComparable works for the keys that satisfy constraints.Ordered.
 NewComparable[int, int](opts ...Option) {}
 

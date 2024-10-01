@@ -5,6 +5,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -266,9 +267,22 @@ func TestTreeDeleteAt(t *testing.T) {
 }
 
 func TestTreeRandom(t *testing.T) {
+	doTestTreeRandom(t, WithCountChildren(true))
+}
+
+func TestTreeRandomSyncPool(t *testing.T) {
+	doTestTreeRandom(t, WithSyncPoolAllocator(true))
+}
+
+func TestTreeRandomSyncPoolCustom(t *testing.T) {
+	var sp sync.Pool
+	doTestTreeRandom(t, WithSyncPool(&sp))
+}
+
+func doTestTreeRandom(t *testing.T, opts ...Option) {
 	const count = 1024
 	a := assert.New(t)
-	tree := NewComparable[int, int](WithCountChildren(true))
+	tree := NewComparable[int, int](opts...)
 	data := make([]int, count)
 	for i := 0; i < count; i++ {
 		data[i] = i
