@@ -6,6 +6,8 @@ import (
 	"arena"
 )
 
+var _ locationCache[int, int] = (*arenaLocationCache[int, int])(nil)
+
 type arenaOptions struct {
 	a *arena.Arena
 }

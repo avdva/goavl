@@ -25,25 +25,29 @@ $ go get github.com/avdva/goavl
 ## API
 
 ```go
-// Create a tree:
+// Constructors:
 // New creates a tree with a user-defined comparator:  
-// intCmp := func(a, b int) int {
-//    if a < b {
-//      return -1
-//    }
-//    if a > b {
-//      return 1
-//    }
-//    return 0
-//  }
+//
+//	func intCmp(a, b int) int {
+//		if a < b {
+//			return -1
+//		}
+//		if a > b {
+//			return 1
+//		}
+//		return 0
+//	}
+//
+//	tree := New[int, int](intCmp, WithCountChildren(true))
+//
 // Options:
-//	- WithCountChildren(bool) enables O(logn) complexity for the functions that operate on element positions.
-//	- WithSyncPool(*sync.Pool) makes Tree use sync.Pool to allocate tree nodes.
-//	- WithArena(*arena.Arena) makes Tree use arenas (currently experimental) to allocate tree nodes.
-//		This requires GOEXPERIMENT=arenas to be set.
-New[int, int](intCmp, WithCountChildren(true)) {}
+// - WithCountChildren(bool) enables O(logn) complexity for the functions that operate on element positions.
+// - WithSyncPool(*sync.Pool) makes Tree use sync.Pool to allocate tree nodes.
+// - WithArena(*arena.Arena) makes Tree use arenas (currently experimental) to allocate tree nodes.
+//	This requires GOEXPERIMENT=arenas to be set.
+New[K, V any, Cmp func(a, b K) int](cmp Cmp, opts ...Option) *Tree[K, V, Cmp] {}
 //  NewComparable works for the keys that satisfy constraints.Ordered.
-NewComparable[int, int](opts ...Option) {}
+NewComparable[K constraints.Ordered, V any](opts ...Option) *Tree[K, V, func(a, b K) int] {}
 
 // Search for elements:
 // Find finds a value for given key.
