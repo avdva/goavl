@@ -1,6 +1,8 @@
 package goavl
 
 import (
+	"sync"
+
 	"golang.org/x/exp/constraints"
 )
 
@@ -14,10 +16,19 @@ type Options struct {
 	// a node by its position with a guaranteed complexity O(logn).
 	countChildren bool
 
-	// syncPoolAllocator, if set makes Tree use sync.Pool to allocate tree nodes,
-	// which can improve performance in some use cases.
-	syncPoolAllocator bool
+	// at is the allocator type used to allocate nodes.
+	at int8
+
+	s *sync.Pool
+
+	ao arenaOptions
 }
+
+const (
+	allocBasic = iota
+	allocSyncPool
+	allocArenas
+)
 
 // WithCountChildren is used to set CountChildren option.
 // If set, each node will have a count of children in the left and right sub-trees.
@@ -29,9 +40,22 @@ func WithCountChildren(count bool) Option {
 }
 
 // WithSyncPoolAllocator makes Tree use sync.Pool to allocate tree nodes.
-func WithSyncPoolAllocator(with bool) Option {
+// Deprecated: use WithSyncPool instead.
+func WithSyncPoolAllocator(bool) Option {
 	return func(o *Options) {
-		o.syncPoolAllocator = with
+		o.at = allocSyncPool
+	}
+}
+
+// WithSyncPool makes Tree use sync.Pool to allocate tree nodes.
+// 's' can be nil. In this case new pool is created for each tree.
+// if 's' is not nil, one pool can be shared between several instances of a tree, however
+//   - all instances should be of the same generic type.
+//   - s.New must be nil.
+func WithSyncPool(s *sync.Pool) Option {
+	return func(o *Options) {
+		o.at = allocSyncPool
+		o.s = s
 	}
 }
 
@@ -78,10 +102,13 @@ func New[K, V any, Cmp func(a, b K) int](cmp Cmp, opts ...Option) *Tree[K, V, Cm
 	for _, o := range opts {
 		o(&result.options)
 	}
-	if result.options.syncPoolAllocator {
-		result.lc = newPooledLocationCache[K, V]()
-	} else {
-		result.lc = newSimpleLocationCache[K, V]()
+	switch result.options.at {
+	case allocBasic:
+		result.lc = newBasicLocationCache[K, V]()
+	case allocSyncPool:
+		result.lc = newPooledLocationCache[K, V](result.options.s)
+	case allocArenas:
+		result.lc = newArenaLocationCache[K, V](result.options.ao)
 	}
 	return result
 }
@@ -90,7 +117,7 @@ func New[K, V any, Cmp func(a, b K) int](cmp Cmp, opts ...Option) *Tree[K, V, Cm
 // This is just a wrapper for New(), where K satisfies constraints.Ordered.
 // Example: NewComparable[int, int]().
 func NewComparable[K constraints.Ordered, V any](opts ...Option) *Tree[K, V, func(a, b K) int] {
-	return New[K, V, func(a, b K) int](func(a, b K) int {
+	return New[K, V](func(a, b K) int {
 		if a < b {
 			return -1
 		}

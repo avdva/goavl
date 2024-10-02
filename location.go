@@ -5,9 +5,9 @@ import (
 )
 
 const (
-	dirLeft   = -1
-	dirCenter = 0
-	dirRight  = 1
+	dirLeft   direction = -1
+	dirCenter direction = 0
+	dirRight  direction = 1
 )
 
 type direction int8

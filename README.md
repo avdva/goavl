@@ -9,7 +9,7 @@ An [AVL tree](https://en.wikipedia.org/wiki/AVL_tree) implementation in Go.
 
 ## Installation
 
-To start using this package, run:
+Package `goavl` requires Go 1.20+. To start, run:
 
 ```sh
 $ go get github.com/avdva/goavl
@@ -17,7 +17,7 @@ $ go get github.com/avdva/goavl
 
 ## Features
 
-- Support for Go generics (Go 1.18+).
+- Support for Go generics.
 - Forward and reverse iterators.
 - Go 1.23 style iterators support.
 - Provides an efficient way of getting items by index (if `CountChildren` is on).
@@ -25,23 +25,29 @@ $ go get github.com/avdva/goavl
 ## API
 
 ```go
-// Create a tree:
-// New creates a tree with a user-defined comparator:  
-// intCmp := func(a, b int) int {
-//    if a < b {
-//      return -1
-//    }
-//    if a > b {
-//      return 1
-//    }
-//    return 0
-//  }
+// Constructors:
+// New creates a tree with a user-defined comparator:
+//
+// func intCmp(a, b int) int {
+// 	if a < b {
+// 		return -1
+// 	}
+// 	if a > b {
+// 		return 1
+// 	}
+// 	return 0
+// }
+// tree := New[int, int](intCmp, WithCountChildren(true))
+//
 // Options:
-//	- WithCountChildren(bool) enables O(logn) complexity for the functions that operate on element positions.
-//	- WithSyncPoolAllocator(bool) makes Tree use sync.Pool to allocate tree nodes.
-New[int, int](intCmp, WithCountChildren(true), WithSyncPoolAllocator(true)) {}
+// - WithCountChildren(bool) enables O(logn) complexity for the functions that operate
+// on element positions.
+// - WithSyncPool(*sync.Pool) makes Tree use sync.Pool to allocate tree nodes.
+// - WithArena(*arena.Arena) makes Tree use arenas (currently experimental) to allocate
+// tree nodes. This requires GOEXPERIMENT=arenas to be set.
+New[K, V any, Cmp func(a, b K) int](cmp Cmp, opts ...Option) *Tree[K, V, Cmp] {}
 //  NewComparable works for the keys that satisfy constraints.Ordered.
-NewComparable[int, int](opts ...Option) {}
+NewComparable[K constraints.Ordered, V any](opts ...Option) *Tree[K, V, func(a, b K) int] {}
 
 // Search for elements:
 // Find finds a value for given key.
@@ -86,7 +92,7 @@ for k, v := range tree.All() {
 */
 ```
 
-Please see the [examples](/tree_example_test.go) and new Go 1.23 [examples](/tree_example_go123_test.go) for more details.
+Please see the [examples](/tree_example_test.go), new Go 1.23 [examples](/tree_example_go123_test.go) and arena [examples](/tree_arena_example_test.go) for more details.
 
 ## Contact
 

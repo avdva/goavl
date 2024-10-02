@@ -142,7 +142,11 @@ func BenchmarkKaraskAVLDelete(b *testing.B) {
 }
 
 func BenchmarkAVLInsert(b *testing.B) {
-	tree := goavl.New[int, int](func(a, b int) int {
+	doBenchmarkAVLInsert[int](b)
+}
+
+func doBenchmarkAVLInsert[V any](b *testing.B, opts ...goavl.Option) {
+	tree := goavl.New[int, V](func(a, b int) int {
 		if a < b {
 			return -1
 		}
@@ -150,11 +154,12 @@ func BenchmarkAVLInsert(b *testing.B) {
 			return 1
 		}
 		return 0
-	})
+	}, opts...)
+	var v V
 	r := rand.New(rand.NewSource(0))
 	for i := 0; i < b.N; i++ {
 		k := r.Int()
-		tree.Insert(k, k)
+		tree.Insert(k, v)
 	}
 	b.Log(tree.Len())
 }
@@ -187,6 +192,10 @@ func BenchmarkAVLFind(b *testing.B) {
 }
 
 func BenchmarkAVLDelete(b *testing.B) {
+	doBenchmarkAVLDelete(b)
+}
+
+func doBenchmarkAVLDelete(b *testing.B, opts ...goavl.Option) {
 	tree := goavl.New[int, int](func(a, b int) int {
 		if a < b {
 			return -1
@@ -195,7 +204,7 @@ func BenchmarkAVLDelete(b *testing.B) {
 			return 1
 		}
 		return 0
-	})
+	}, opts...)
 	b.StopTimer()
 	r := rand.New(rand.NewSource(0))
 	keys := make([]int, b.N)
