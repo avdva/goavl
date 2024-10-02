@@ -92,7 +92,7 @@ for k, v := range tree.All() {
 */
 ```
 
-Please see the [examples](/tree_example_test.go) and new Go 1.23 [examples](/tree_example_go123_test.go) for more details.
+Please see the [examples](/tree_example_test.go), new Go 1.23 [examples](/tree_example_go123_test.go) and arena [examples](/tree_arena_example_test.go) for more details.
 
 ## Contact
 
