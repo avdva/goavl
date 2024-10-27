@@ -498,6 +498,14 @@ func (t *Tree[K, V, Cmp]) locate(k K) (loc ptrLocation[K, V], dir direction) {
 	return loc, dir
 }
 
+func (t *Tree[K, V, Cmp]) treeRotated(parent, oldRoot, newRoot ptrLocation[K, V]) {
+	if !parent.isNil() {
+		parent.setChild(newRoot, parent.childDir(oldRoot))
+	} else {
+		t.setRoot(newRoot)
+	}
+}
+
 func (t *Tree[K, V, Cmp]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
 	for !loc.isNil() {
 		parent := loc.parent()
@@ -506,9 +514,9 @@ func (t *Tree[K, V, Cmp]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
 			left := loc.left()
 			switch left.balance() {
 			case -1, 0:
-				t.rr(loc)
+				t.treeRotated(parent, loc, rr(loc, t.options.countChildren))
 			case 1:
-				t.lr(loc)
+				t.treeRotated(parent, loc, lr(loc, t.options.countChildren))
 			default:
 				panic("wrong balance" + loc.String())
 			}
@@ -516,9 +524,9 @@ func (t *Tree[K, V, Cmp]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
 			right := loc.right()
 			switch right.balance() {
 			case -1:
-				t.rl(loc)
+				t.treeRotated(parent, loc, rl(loc, t.options.countChildren))
 			case 1, 0:
-				t.ll(loc)
+				t.treeRotated(parent, loc, ll(loc, t.options.countChildren))
 			default:
 				panic("wrong balance" + loc.String())
 			}
@@ -535,15 +543,9 @@ func (t *Tree[K, V, Cmp]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
 	}
 }
 
-func (t *Tree[K, V, Cmp]) rr(loc ptrLocation[K, V]) {
+func rr[K, V any](loc ptrLocation[K, V], recalcCounts bool) ptrLocation[K, V] {
 	left := loc.left()
 	leftRight := left.right()
-	parent, dir := loc.parentAndDir()
-	if dir != dirCenter {
-		parent.setChild(left, dir)
-	} else {
-		t.setRoot(left)
-	}
 
 	loc.setLeft(leftRight)
 	left.setRight(loc)
@@ -551,22 +553,17 @@ func (t *Tree[K, V, Cmp]) rr(loc ptrLocation[K, V]) {
 	loc.recalcHeight()
 	left.recalcHeight()
 
-	if t.options.countChildren {
+	if recalcCounts {
 		loc.recalcCounts()
 		left.recalcCounts()
 	}
+
+	return left
 }
 
-func (t *Tree[K, V, Cmp]) lr(loc ptrLocation[K, V]) {
+func lr[K, V any](loc ptrLocation[K, V], recalcCounts bool) ptrLocation[K, V] {
 	left := loc.left()
 	leftRight := left.right()
-
-	parent, dir := loc.parentAndDir()
-	if dir != dirCenter {
-		parent.setChild(leftRight, dir)
-	} else {
-		t.setRoot(leftRight)
-	}
 
 	leftRightRight := leftRight.right()
 	leftRightLeft := leftRight.left()
@@ -581,23 +578,18 @@ func (t *Tree[K, V, Cmp]) lr(loc ptrLocation[K, V]) {
 	left.recalcHeight()
 	leftRight.recalcHeight()
 
-	if t.options.countChildren {
+	if recalcCounts {
 		loc.recalcCounts()
 		left.recalcCounts()
 		leftRight.recalcCounts()
 	}
+
+	return leftRight
 }
 
-func (t *Tree[K, V, Cmp]) rl(loc ptrLocation[K, V]) {
+func rl[K, V any](loc ptrLocation[K, V], recalcCounts bool) ptrLocation[K, V] {
 	right := loc.right()
 	rightLeft := right.left()
-
-	parent, dir := loc.parentAndDir()
-	if dir != dirCenter {
-		parent.setChild(rightLeft, dir)
-	} else {
-		t.setRoot(rightLeft)
-	}
 
 	rightLeftLeft := rightLeft.left()
 	rightLeftRight := rightLeft.right()
@@ -612,30 +604,29 @@ func (t *Tree[K, V, Cmp]) rl(loc ptrLocation[K, V]) {
 	right.recalcHeight()
 	rightLeft.recalcHeight()
 
-	if t.options.countChildren {
+	if recalcCounts {
 		loc.recalcCounts()
 		right.recalcCounts()
 		rightLeft.recalcCounts()
 	}
+
+	return rightLeft
 }
 
-func (t *Tree[K, V, Cmp]) ll(loc ptrLocation[K, V]) {
+func ll[K, V any](loc ptrLocation[K, V], recalcCounts bool) ptrLocation[K, V] {
 	right := loc.right()
 	rightLeft := right.left()
-	parent, dir := loc.parentAndDir()
-	if dir != dirCenter {
-		parent.setChild(right, dir)
-	} else {
-		t.setRoot(right)
-	}
+
 	loc.setRight(rightLeft)
 	right.setLeft(loc)
 
 	loc.recalcHeight()
 	right.recalcHeight()
 
-	if t.options.countChildren {
+	if recalcCounts {
 		loc.recalcCounts()
 		right.recalcCounts()
 	}
+
+	return right
 }

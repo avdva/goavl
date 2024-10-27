@@ -51,6 +51,16 @@ func (l *ptrLocation[K, V]) parentAndDir() (parent ptrLocation[K, V], dir direct
 	return parent, dir
 }
 
+func (l *ptrLocation[K, V]) childDir(child ptrLocation[K, V]) direction {
+	if left := l.left(); child == left {
+		return dirLeft
+	}
+	if right := l.right(); child == right {
+		return dirRight
+	}
+	return dirCenter
+}
+
 func (l *ptrLocation[K, V]) balance() int8 {
 	b := int16(0)
 	if r := l.right(); !r.isNil() {
