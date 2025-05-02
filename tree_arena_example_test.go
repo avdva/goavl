@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-func ExampleTree_Arenas() { //nolint:govet
+func ExampleWithArena() { //nolint:govet
 	a := arena.NewArena()
 	defer a.Free()
 	tree := NewComparable[int, int](WithArena(a))
