@@ -4,7 +4,6 @@ on:
     tags:
       - v*
     branches:
-      - master
       - main
       - dev
   pull_request:
@@ -23,7 +22,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: '1.23'
+          go-version: '1.24'
       - uses: actions/checkout@v3
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3

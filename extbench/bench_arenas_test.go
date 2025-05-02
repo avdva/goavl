@@ -14,3 +14,10 @@ func BenchmarkAVLInsertArenas(b *testing.B) {
 	defer a.Free()
 	doBenchmarkAVLInsert[int](b, goavl.WithArena(a))
 }
+
+func BenchmarkAVLCreateDeleteArenas(b *testing.B) {
+	doBenchmarkAVLCreateDelete(b, func() (options []goavl.Option, cleanup func()) {
+		a := arena.NewArena()
+		return []goavl.Option{goavl.WithArena(a)}, func() {a.Free()}
+	})
+}

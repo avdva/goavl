@@ -11,7 +11,7 @@ import (
 func TestTreeIteratorGo123(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int]()
-	for i := 0; i < 128; i++ {
+	for i := range 128 {
 		ptr, inserted := tree.Insert(i, i*2)
 		a.Equal(i*2, *ptr)
 		a.True(inserted)
@@ -35,7 +35,7 @@ func TestTreeIteratorGo123(t *testing.T) {
 func TestTreeMutIteratorGo123(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int]()
-	for i := 0; i < 128; i++ {
+	for i := range 128 {
 		ptr, inserted := tree.Insert(i, i*2)
 		a.Equal(i*2, *ptr)
 		a.True(inserted)
