@@ -2,6 +2,7 @@ package extbench
 
 import (
 	"math/rand"
+	"runtime"
 	"testing"
 
 	"github.com/avdva/goavl"
@@ -219,5 +220,28 @@ func doBenchmarkAVLDelete(b *testing.B, opts ...goavl.Option) {
 	}
 	if tree.Len() != 0 {
 		panic("not empty")
+	}
+}
+
+func BenchmarkAVLCreateDelete(b *testing.B) {
+	doBenchmarkAVLCreateDelete(b, func() (options []goavl.Option, cleanup func()) {
+		return nil, func() {}
+	})
+}
+
+func doBenchmarkAVLCreateDelete(b *testing.B, optsGetter func() (options []goavl.Option, cleanup func())) {
+	const nElements = 1 << 9
+	for b.Loop() {
+		func() {
+			opts, cleanup := optsGetter()
+			defer cleanup()
+			tree := goavl.NewComparable[int, int](opts...)
+			for i := range nElements {
+				tree.Insert(i, i)
+				tree.Find(i)
+			}
+			tree = nil
+		}()
+		runtime.GC()
 	}
 }

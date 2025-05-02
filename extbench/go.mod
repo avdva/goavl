@@ -1,6 +1,8 @@
 module bench
 
-go 1.23
+go 1.24
+
+replace github.com/avdva/goavl => ../
 
 require (
 	github.com/avdva/goavl v1.5.0
@@ -8,4 +10,4 @@ require (
 	github.com/tidwall/btree v1.7.0
 )
 
-require golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
+require golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
