@@ -408,6 +408,64 @@ func TestTreeDeleteIterator2(t *testing.T) {
 	a.Zero(tree.Len())
 }
 
+func TestTreeDeleteIteratorRejectsStaleIterator(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int]()
+	tree.Insert(1, 1)
+	tree.Insert(2, 2)
+
+	it := tree.AscendFromStart()
+	next := tree.DeleteIterator(it)
+	a.Equal(1, tree.Len())
+
+	invalid := tree.DeleteIterator(it)
+	_, ok := invalid.Value()
+	a.False(ok)
+	a.Equal(1, tree.Len())
+
+	e, ok := next.Value()
+	a.True(ok)
+	a.Equal(2, e.Key)
+}
+
+func TestTreeDeleteIteratorRejectsReusedStaleIterator(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int](WithSyncPoolAllocator(true))
+	tree.Insert(1, 1)
+
+	it := tree.AscendFromStart()
+	tree.DeleteIterator(it)
+	tree.Insert(2, 2)
+
+	tree.DeleteIterator(it)
+	a.Equal(1, tree.Len())
+	e, ok := tree.Min()
+	a.True(ok)
+	a.Equal(2, e.Key)
+}
+
+func TestTreeDeleteIteratorRejectsOtherTreeIterator(t *testing.T) {
+	a := assert.New(t)
+	tree1 := NewComparable[int, int]()
+	tree2 := NewComparable[int, int]()
+	tree1.Insert(1, 1)
+	tree2.Insert(2, 2)
+
+	it := tree1.AscendFromStart()
+	invalid := tree2.DeleteIterator(it)
+
+	_, ok := invalid.Value()
+	a.False(ok)
+	a.Equal(1, tree1.Len())
+	a.Equal(1, tree2.Len())
+	e, ok := tree1.Min()
+	a.True(ok)
+	a.Equal(1, e.Key)
+	e, ok = tree2.Min()
+	a.True(ok)
+	a.Equal(2, e.Key)
+}
+
 func TestTreeIteratorValue(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
@@ -538,12 +596,12 @@ func TestTreeDescend(t *testing.T) {
 	a.False(ok)
 }
 
-func checkHeightAndBalance[K, V any](l ptrLocation[K, V]) error {
+func checkHeightAndBalance[K, V any](l location[K, V]) error {
 	_, _, _, err := recalcHeightAndBalance(l)
 	return err
 }
 
-func recalcHeightAndBalance[K, V any](l ptrLocation[K, V]) (height uint8, lCount, rCount uint32, err error) {
+func recalcHeightAndBalance[K, V any](l location[K, V]) (height uint8, lCount, rCount uint32, err error) {
 	if l.isNil() {
 		return 0, 0, 0, nil
 	}
@@ -573,21 +631,21 @@ func recalcHeightAndBalance[K, V any](l ptrLocation[K, V]) (height uint8, lCount
 }
 
 func printTree[K, V any, Cmp func(a, b K) int](t *Tree[K, V, Cmp], w io.Writer) {
-	traverseTree(t, func(loc ptrLocation[K, V]) bool {
+	traverseTree(t, func(loc location[K, V]) bool {
 		_, _ = w.Write([]byte(loc.String()))
 		_, _ = w.Write([]byte{'\n'})
 		return true
 	})
 }
 
-func traverseTree[K, V any, Cmp func(a, b K) int](t *Tree[K, V, Cmp], f func(loc ptrLocation[K, V]) bool) {
+func traverseTree[K, V any, Cmp func(a, b K) int](t *Tree[K, V, Cmp], f func(loc location[K, V]) bool) {
 	if t.root.isNil() {
 		return
 	}
 	traverseLocation(t.root, f)
 }
 
-func traverseLocation[K, V any](loc ptrLocation[K, V], f func(loc ptrLocation[K, V]) bool) {
+func traverseLocation[K, V any](loc location[K, V], f func(loc location[K, V]) bool) {
 	if !loc.left().isNil() {
 		traverseLocation(loc.left(), f)
 	}

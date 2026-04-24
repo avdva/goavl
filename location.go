@@ -18,25 +18,26 @@ func (d direction) invert() direction {
 
 type ptrNode[K, V any] struct {
 	node[K, V]
-	left, right, parent ptrLocation[K, V]
+	id                  uint64
+	left, right, parent location[K, V]
 }
 
 func (n *ptrNode[K, V]) init(k K, v V) {
 	n.node.init(k, v)
-	n.left = ptrLocation[K, V]{}
-	n.right = ptrLocation[K, V]{}
-	n.parent = ptrLocation[K, V]{}
+	n.left = location[K, V]{}
+	n.right = location[K, V]{}
+	n.parent = location[K, V]{}
 }
 
-type ptrLocation[K, V any] struct {
+type location[K, V any] struct {
 	*ptrNode[K, V]
 }
 
-func (l ptrLocation[K, V]) isNil() bool {
+func (l location[K, V]) isNil() bool {
 	return l.ptrNode == nil
 }
 
-func (l *ptrLocation[K, V]) parentAndDir() (parent ptrLocation[K, V], dir direction) {
+func (l *location[K, V]) parentAndDir() (parent location[K, V], dir direction) {
 	parent = l.parent()
 	if parent.isNil() {
 		return parent, dirCenter
@@ -51,7 +52,7 @@ func (l *ptrLocation[K, V]) parentAndDir() (parent ptrLocation[K, V], dir direct
 	return parent, dir
 }
 
-func (l *ptrLocation[K, V]) childDir(child ptrLocation[K, V]) direction {
+func (l *location[K, V]) childDir(child location[K, V]) direction {
 	if left := l.left(); child == left {
 		return dirLeft
 	}
@@ -61,7 +62,7 @@ func (l *ptrLocation[K, V]) childDir(child ptrLocation[K, V]) direction {
 	return dirCenter
 }
 
-func (l *ptrLocation[K, V]) balance() int8 {
+func (l *location[K, V]) balance() int8 {
 	b := int16(0)
 	if r := l.right(); !r.isNil() {
 		b += int16(r.height()) + 1
@@ -72,15 +73,16 @@ func (l *ptrLocation[K, V]) balance() int8 {
 	return int8(b)
 }
 
-func (l *ptrLocation[K, V]) setChild(child ptrLocation[K, V], dir direction) {
-	if dir == dirLeft {
+func (l *location[K, V]) setChild(child location[K, V], dir direction) {
+	switch dir {
+	case dirLeft:
 		l.setLeft(child)
-	} else if dir == dirRight {
+	case dirRight:
 		l.setRight(child)
 	}
 }
 
-func (l *ptrLocation[K, V]) childAt(dir direction) ptrLocation[K, V] {
+func (l *location[K, V]) childAt(dir direction) location[K, V] {
 	if dir == dirCenter {
 		panic("invalid direction")
 	}
@@ -90,18 +92,26 @@ func (l *ptrLocation[K, V]) childAt(dir direction) ptrLocation[K, V] {
 	return l.right()
 }
 
-func (l *ptrLocation[K, V]) setParent(parent ptrLocation[K, V]) {
+func (l *location[K, V]) setParent(parent location[K, V]) {
 	l.ptrNode.parent = parent
 }
 
-func (l *ptrLocation[K, V]) setRight(child ptrLocation[K, V]) {
+func (l *location[K, V]) id() uint64 {
+	return l.ptrNode.id
+}
+
+func (l *location[K, V]) setID(id uint64) {
+	l.ptrNode.id = id
+}
+
+func (l *location[K, V]) setRight(child location[K, V]) {
 	l.ptrNode.right = child
 	if !child.isNil() {
 		child.ptrNode.parent = *l
 	}
 }
 
-func (l *ptrLocation[K, V]) setLeft(child ptrLocation[K, V]) {
+func (l *location[K, V]) setLeft(child location[K, V]) {
 	l.ptrNode.left = child
 	if !child.isNil() {
 		child.ptrNode.parent = *l
@@ -109,7 +119,7 @@ func (l *ptrLocation[K, V]) setLeft(child ptrLocation[K, V]) {
 }
 
 // addChild panics if there's a child at this direction.
-func (l *ptrLocation[K, V]) addChild(child ptrLocation[K, V], dir direction) {
+func (l *location[K, V]) addChild(child location[K, V], dir direction) {
 	child.ptrNode.parent = *l
 	if dir == dirLeft {
 		if !l.ptrNode.left.isNil() {
@@ -126,18 +136,18 @@ func (l *ptrLocation[K, V]) addChild(child ptrLocation[K, V], dir direction) {
 	}
 }
 
-func (l *ptrLocation[K, V]) removeChild(child ptrLocation[K, V]) {
+func (l *location[K, V]) removeChild(child location[K, V]) {
 	if l.left() == child {
-		l.ptrNode.left = ptrLocation[K, V]{}
+		l.ptrNode.left = location[K, V]{}
 	} else if l.right() == child {
-		l.ptrNode.right = ptrLocation[K, V]{}
+		l.ptrNode.right = location[K, V]{}
 	} else {
 		panic("wrong dir")
 	}
-	child.setParent(ptrLocation[K, V]{})
+	child.setParent(location[K, V]{})
 }
 
-func (l *ptrLocation[K, V]) recalcHeight() (heightChanged bool) {
+func (l *location[K, V]) recalcHeight() (heightChanged bool) {
 	var height uint8
 	if l := l.left(); !l.isNil() {
 		height = 1 + l.height()
@@ -150,7 +160,7 @@ func (l *ptrLocation[K, V]) recalcHeight() (heightChanged bool) {
 	return heightChanged
 }
 
-func (l *ptrLocation[K, V]) recalcCounts() {
+func (l *location[K, V]) recalcCounts() {
 	var nchild uint32
 	if left := l.left(); !left.isNil() {
 		nchild += 1 + left.childrenCount()
@@ -161,26 +171,26 @@ func (l *ptrLocation[K, V]) recalcCounts() {
 	l.setChildrenCount(nchild)
 }
 
-func (l *ptrLocation[K, V]) parent() ptrLocation[K, V] {
+func (l *location[K, V]) parent() location[K, V] {
 	return l.ptrNode.parent
 }
 
-func (l *ptrLocation[K, V]) right() ptrLocation[K, V] {
+func (l *location[K, V]) right() location[K, V] {
 	return l.ptrNode.right
 }
 
-func (l *ptrLocation[K, V]) left() ptrLocation[K, V] {
+func (l *location[K, V]) left() location[K, V] {
 	return l.ptrNode.left
 }
 
-func (l *ptrLocation[K, V]) leftChildrenCount() uint32 {
+func (l *location[K, V]) leftChildrenCount() uint32 {
 	if l := l.left(); !l.isNil() {
 		return 1 + l.childrenCount()
 	}
 	return 0
 }
 
-func (l *ptrLocation[K, V]) String() string {
+func (l *location[K, V]) String() string {
 	var parentKey K
 	if p := l.parent(); !p.isNil() {
 		parentKey = p.key()

@@ -10,7 +10,7 @@ import "iter"
 type Mutator[K, V any, Cmp func(a, b K) int] struct {
 	E     Entry[K, V]
 	t     *Tree[K, V, Cmp]
-	it    Iterator[K, V]
+	it    Iterator[K, V, Cmp]
 	acted bool
 }
 

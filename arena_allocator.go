@@ -29,12 +29,12 @@ func newArenaLocationCache[K, V any](ao arenaOptions) *arenaLocationCache[K, V] 
 	return &arenaLocationCache[K, V]{a: ao.a}
 }
 
-func (lc *arenaLocationCache[K, V]) new(k K, v V) ptrLocation[K, V] { //nolint:unused // used in locationCache iface
+func (lc *arenaLocationCache[K, V]) new(k K, v V) location[K, V] { //nolint:unused // used in locationCache iface
 	pn := arena.New[ptrNode[K, V]](lc.a)
 	pn.init(k, v)
-	return ptrLocation[K, V]{
+	return location[K, V]{
 		ptrNode: pn,
 	}
 }
 
-func (lc *arenaLocationCache[K, V]) release(ptrLocation[K, V]) {} //nolint:unused // used in locationCache iface
+func (lc *arenaLocationCache[K, V]) release(location[K, V]) {} //nolint:unused // used in locationCache iface

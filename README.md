@@ -69,21 +69,21 @@ Delete(k K) (v V, deleted bool) {}
 // DeleteAt deletes i'th element.
 DeleteAt(position int) (k K, v V) {}
 // DeleteIterator deletes the element pointed at by it.
-DeleteIterator(it Iterator[K, V]) {}
+DeleteIterator(it Iterator[K, V, Cmp]) {}
 // Clear deletes all the elements.
 Clear() {}
 
 // Iterators:
 // AscendFromStart returns an iterator pointing to the smallest element.
-AscendFromStart() Iterator[K, V] {}
+AscendFromStart() Iterator[K, V, Cmp] {}
 // DescendFromEnd returns an iterator pointing to the largest element.
-DescendFromEnd() Iterator[K, V] {}
+DescendFromEnd() Iterator[K, V, Cmp] {}
 // Ascend returns an iterator pointing to the element that's >= `from`.
-Ascend(from K) Iterator[K, V] {}
+Ascend(from K) Iterator[K, V, Cmp] {}
 // Descend returns an iterator pointing to the element that's <= `from`.
-Descend(from K) Iterator[K, V] {}
+Descend(from K) Iterator[K, V, Cmp] {}
 // AscendAt returns an iterator pointing to the i'th element.
-AscendAt(position int) Iterator[K, V]
+AscendAt(position int) Iterator[K, V, Cmp]
 /*
 Go 1.23 iterators are also supported:
 for k, v := range tree.All() {
