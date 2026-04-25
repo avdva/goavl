@@ -123,12 +123,12 @@ func (l *location[K, V]) addChild(child location[K, V], dir direction) {
 	child.ptrNode.parent = *l
 	if dir == dirLeft {
 		if !l.ptrNode.left.isNil() {
-			panic("already has a left child")
+			panic("already has left child")
 		}
 		l.ptrNode.left = child
 	} else if dir == dirRight {
 		if !l.ptrNode.right.isNil() {
-			panic("already has a right child")
+			panic("already has right child")
 		}
 		l.ptrNode.right = child
 	} else {
