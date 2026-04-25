@@ -121,17 +121,18 @@ func (l *location[K, V]) setLeft(child location[K, V]) {
 // addChild panics if there's a child at this direction.
 func (l *location[K, V]) addChild(child location[K, V], dir direction) {
 	child.ptrNode.parent = *l
-	if dir == dirLeft {
+	switch dir {
+	case dirLeft:
 		if !l.ptrNode.left.isNil() {
 			panic("already has left child")
 		}
 		l.ptrNode.left = child
-	} else if dir == dirRight {
+	case dirRight:
 		if !l.ptrNode.right.isNil() {
 			panic("already has right child")
 		}
 		l.ptrNode.right = child
-	} else {
+	default:
 		panic("wrong dir")
 	}
 }
@@ -196,5 +197,5 @@ func (l *location[K, V]) String() string {
 		parentKey = p.key()
 	}
 	return fmt.Sprintf("{k: %v, v: %v, p: %v b: %d, h: %d, c: %d}",
-		l.ptrNode.k, l.ptrNode.v, parentKey, l.balance(), l.height(), l.childrenCount())
+		l.k, l.v, parentKey, l.balance(), l.height(), l.childrenCount())
 }
