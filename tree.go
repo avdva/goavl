@@ -65,8 +65,9 @@ func WithSyncPool(s *sync.Pool) Option {
 // Find and Delete operations have O(logn) complexity.
 type Tree[K, V any, Cmp func(a, b K) int] struct {
 	options        Options
-	root, min, max ptrLocation[K, V]
+	root, min, max location[K, V]
 	length         int
+	nextID         uint64
 	cmp            Cmp
 	lc             locationCache[K, V]
 }
@@ -139,6 +140,7 @@ func (t *Tree[K, V, Cmp]) Insert(k K, v V) (valuePtr *V, inserted bool) {
 		return loc.valuePtr(), false
 	}
 	newNode := t.lc.new(k, v)
+	newNode.setID(t.newLocationID())
 	t.length++
 	switch dir {
 	case dirLeft, dirRight:
@@ -163,7 +165,7 @@ func (t *Tree[K, V, Cmp]) Insert(k K, v V) (valuePtr *V, inserted bool) {
 	return newNode.valuePtr(), true
 }
 
-func (t *Tree[K, V, Cmp]) updateCounts(loc ptrLocation[K, V]) {
+func (t *Tree[K, V, Cmp]) updateCounts(loc location[K, V]) {
 	if !t.options.countChildren {
 		return
 	}
@@ -227,7 +229,7 @@ func (t *Tree[K, V, Cmp]) shouldLocateAtLinearly(position int) bool {
 	return position <= 8
 }
 
-func (t *Tree[K, V, Cmp]) locateAt(position int) ptrLocation[K, V] {
+func (t *Tree[K, V, Cmp]) locateAt(position int) location[K, V] {
 	if position < 0 || position >= t.Len() {
 		panic("index out of range")
 	}
@@ -252,19 +254,31 @@ func (t *Tree[K, V, Cmp]) locateAt(position int) ptrLocation[K, V] {
 	}
 }
 
+func (t *Tree[K, V, Cmp]) newLocationID() uint64 {
+	t.nextID++
+	return t.nextID
+}
+
+func (t *Tree[K, V, Cmp]) iteratorAt(loc location[K, V]) Iterator[K, V, Cmp] {
+	it := Iterator[K, V, Cmp]{
+		loc: loc,
+		t:   t,
+	}
+	if !loc.isNil() {
+		it.id = loc.id()
+	}
+	return it
+}
+
 // AscendAt returns an iterator pointing to the i'th element.
 // Panics if position >= tree.Len().
 // Time complexity:
 //
 //	O(logn) - if children node counts are enabled.
 //	O(n) - otherwise.
-func (t *Tree[K, V, Cmp]) AscendAt(position int) Iterator[K, V] {
+func (t *Tree[K, V, Cmp]) AscendAt(position int) Iterator[K, V, Cmp] {
 	loc := t.locateAt(position)
-	return Iterator[K, V]{
-		head: t.min,
-		tail: t.max,
-		loc:  loc,
-	}
+	return t.iteratorAt(loc)
 }
 
 // Delete deletes a node from the tree.
@@ -283,21 +297,26 @@ func (t *Tree[K, V, Cmp]) Delete(k K) (v V, deleted bool) {
 // DeleteIterator deletes the element referenced by the iterator.
 // Returns iterator to the next element.
 // Time complexity: O(logn).
-func (t *Tree[K, V, Cmp]) DeleteIterator(it Iterator[K, V]) Iterator[K, V] {
-	if !t.isValidloc(it.loc) {
-		return Iterator[K, V]{}
+func (t *Tree[K, V, Cmp]) DeleteIterator(it Iterator[K, V, Cmp]) Iterator[K, V, Cmp] {
+	if it.t != t || !t.isValidloc(it.loc, it.id) {
+		return Iterator[K, V, Cmp]{}
 	}
 	next := nextLocation(it.loc)
 	t.deleteAndReplace(it.loc)
-	return Iterator[K, V]{
-		head: t.min,
-		tail: t.max,
-		loc:  next,
-	}
+	return t.iteratorAt(next)
 }
 
-func (t *Tree[K, V, Cmp]) isValidloc(loc ptrLocation[K, V]) bool {
-	return !loc.isNil()
+func (t *Tree[K, V, Cmp]) isValidloc(loc location[K, V], id uint64) bool {
+	if loc.isNil() || loc.id() != id {
+		return false
+	}
+	for {
+		parent := loc.parent()
+		if parent.isNil() {
+			return loc == t.root
+		}
+		loc = parent
+	}
 }
 
 // DeleteAt deletes a node at the given position.
@@ -314,8 +333,8 @@ func (t *Tree[K, V, Cmp]) DeleteAt(position int) (k K, v V) {
 	return k, v
 }
 
-func (t *Tree[K, V, Cmp]) findReplacement(loc ptrLocation[K, V]) ptrLocation[K, V] {
-	var replacement ptrLocation[K, V]
+func (t *Tree[K, V, Cmp]) findReplacement(loc location[K, V]) location[K, V] {
+	var replacement location[K, V]
 	left, right := loc.left(), loc.right()
 	if !left.isNil() {
 		if !right.isNil() {
@@ -335,7 +354,7 @@ func (t *Tree[K, V, Cmp]) findReplacement(loc ptrLocation[K, V]) ptrLocation[K, 
 	return replacement
 }
 
-func (t *Tree[K, V, Cmp]) deleteAndReplace(loc ptrLocation[K, V]) {
+func (t *Tree[K, V, Cmp]) deleteAndReplace(loc location[K, V]) {
 	replacement := t.findReplacement(loc)
 	parent, dir := loc.parentAndDir()
 	if loc == t.min {
@@ -380,11 +399,14 @@ func (t *Tree[K, V, Cmp]) deleteAndReplace(loc ptrLocation[K, V]) {
 			t.checkBalance(replacementParent, true)
 		}
 	}
+	loc.ptrNode.left = location[K, V]{}
+	loc.ptrNode.right = location[K, V]{}
+	loc.ptrNode.parent = location[K, V]{}
 	t.lc.release(loc)
 	t.length--
 }
 
-func goLeft[K, V any](loc ptrLocation[K, V]) ptrLocation[K, V] {
+func goLeft[K, V any](loc location[K, V]) location[K, V] {
 	if loc.isNil() {
 		return loc
 	}
@@ -394,7 +416,7 @@ func goLeft[K, V any](loc ptrLocation[K, V]) ptrLocation[K, V] {
 	return loc
 }
 
-func goRight[K, V any](loc ptrLocation[K, V]) ptrLocation[K, V] {
+func goRight[K, V any](loc location[K, V]) location[K, V] {
 	if loc.isNil() {
 		return loc
 	}
@@ -404,16 +426,16 @@ func goRight[K, V any](loc ptrLocation[K, V]) ptrLocation[K, V] {
 	return loc
 }
 
-func (t *Tree[K, V, Cmp]) setRoot(root ptrLocation[K, V]) {
+func (t *Tree[K, V, Cmp]) setRoot(root location[K, V]) {
 	t.root = root
 	if !t.root.isNil() {
-		t.root.setParent(ptrLocation[K, V]{})
+		t.root.setParent(location[K, V]{})
 	}
 }
 
 // Clear clears the tree.
 func (t *Tree[K, V, Cmp]) Clear() {
-	t.root = ptrLocation[K, V]{}
+	t.root = location[K, V]{}
 	t.min = t.root
 	t.max = t.root
 	t.length = 0
@@ -425,61 +447,45 @@ func (t *Tree[K, V, Cmp]) Len() int {
 }
 
 // AscendFromStart returns an iterator pointing to the minimum element.
-func (t *Tree[K, V, Cmp]) AscendFromStart() Iterator[K, V] {
-	return Iterator[K, V]{
-		head: t.min,
-		tail: t.max,
-		loc:  t.min,
-	}
+func (t *Tree[K, V, Cmp]) AscendFromStart() Iterator[K, V, Cmp] {
+	return t.iteratorAt(t.min)
 }
 
 // DescendFromEnd returns an iterator pointing to the maximum element.
-func (t *Tree[K, V, Cmp]) DescendFromEnd() Iterator[K, V] {
-	return Iterator[K, V]{
-		head: t.min,
-		tail: t.max,
-		loc:  t.max,
-	}
+func (t *Tree[K, V, Cmp]) DescendFromEnd() Iterator[K, V, Cmp] {
+	return t.iteratorAt(t.max)
 }
 
 // Ascend returns an iterator pointing to the element that's >= `from`.
-func (t *Tree[K, V, Cmp]) Ascend(from K) Iterator[K, V] {
+func (t *Tree[K, V, Cmp]) Ascend(from K) Iterator[K, V, Cmp] {
 	loc, dir := t.locate(from)
 	if dir == dirRight {
 		for !loc.isNil() && dir == dirRight {
 			loc, dir = loc.parentAndDir()
 		}
 	}
-	return Iterator[K, V]{
-		head: t.min,
-		tail: t.max,
-		loc:  loc,
-	}
+	return t.iteratorAt(loc)
 }
 
 // Descend returns an iterator pointing to the element that's <= `from`.
-func (t *Tree[K, V, Cmp]) Descend(from K) Iterator[K, V] {
+func (t *Tree[K, V, Cmp]) Descend(from K) Iterator[K, V, Cmp] {
 	loc, dir := t.locate(from)
 	if dir == dirLeft {
 		for !loc.isNil() && dir == dirLeft {
 			loc, dir = loc.parentAndDir()
 		}
 	}
-	return Iterator[K, V]{
-		head: t.min,
-		tail: t.max,
-		loc:  loc,
-	}
+	return t.iteratorAt(loc)
 }
 
-func (t *Tree[K, V, Cmp]) locate(k K) (loc ptrLocation[K, V], dir direction) {
+func (t *Tree[K, V, Cmp]) locate(k K) (loc location[K, V], dir direction) {
 	loc = t.root
 	dir = dirCenter
 	if loc.isNil() {
 		return loc, dir
 	}
 	for {
-		var next ptrLocation[K, V]
+		var next location[K, V]
 		switch t.cmp(k, loc.key()) {
 		case -1:
 			next = loc.left()
@@ -498,7 +504,7 @@ func (t *Tree[K, V, Cmp]) locate(k K) (loc ptrLocation[K, V], dir direction) {
 	return loc, dir
 }
 
-func (t *Tree[K, V, Cmp]) treeRotated(parent, oldRoot, newRoot ptrLocation[K, V]) {
+func (t *Tree[K, V, Cmp]) treeRotated(parent, oldRoot, newRoot location[K, V]) {
 	if !parent.isNil() {
 		parent.setChild(newRoot, parent.childDir(oldRoot))
 	} else {
@@ -506,7 +512,7 @@ func (t *Tree[K, V, Cmp]) treeRotated(parent, oldRoot, newRoot ptrLocation[K, V]
 	}
 }
 
-func (t *Tree[K, V, Cmp]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
+func (t *Tree[K, V, Cmp]) checkBalance(loc location[K, V], fullWayUp bool) {
 	for !loc.isNil() {
 		parent := loc.parent()
 		switch loc.balance() {
@@ -543,7 +549,7 @@ func (t *Tree[K, V, Cmp]) checkBalance(loc ptrLocation[K, V], fullWayUp bool) {
 	}
 }
 
-func rr[K, V any](loc ptrLocation[K, V], recalcCounts bool) ptrLocation[K, V] {
+func rr[K, V any](loc location[K, V], recalcCounts bool) location[K, V] {
 	left := loc.left()
 	leftRight := left.right()
 
@@ -561,7 +567,7 @@ func rr[K, V any](loc ptrLocation[K, V], recalcCounts bool) ptrLocation[K, V] {
 	return left
 }
 
-func lr[K, V any](loc ptrLocation[K, V], recalcCounts bool) ptrLocation[K, V] {
+func lr[K, V any](loc location[K, V], recalcCounts bool) location[K, V] {
 	left := loc.left()
 	leftRight := left.right()
 
@@ -587,7 +593,7 @@ func lr[K, V any](loc ptrLocation[K, V], recalcCounts bool) ptrLocation[K, V] {
 	return leftRight
 }
 
-func rl[K, V any](loc ptrLocation[K, V], recalcCounts bool) ptrLocation[K, V] {
+func rl[K, V any](loc location[K, V], recalcCounts bool) location[K, V] {
 	right := loc.right()
 	rightLeft := right.left()
 
@@ -613,7 +619,7 @@ func rl[K, V any](loc ptrLocation[K, V], recalcCounts bool) ptrLocation[K, V] {
 	return rightLeft
 }
 
-func ll[K, V any](loc ptrLocation[K, V], recalcCounts bool) ptrLocation[K, V] {
+func ll[K, V any](loc location[K, V], recalcCounts bool) location[K, V] {
 	right := loc.right()
 	rightLeft := right.left()
 

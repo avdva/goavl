@@ -22,17 +22,19 @@ func newPooledLocationCache[K, V any](p *sync.Pool) *pooledLocationCache[K, V] {
 	return result
 }
 
-func (lc *pooledLocationCache[K, V]) new(k K, v V) ptrLocation[K, V] { //nolint:unused // used in locationCache iface
+func (lc *pooledLocationCache[K, V]) new(k K, v V) location[K, V] { //nolint:unused // used in locationCache iface
 	pn, _ := lc.p.Get().(*ptrNode[K, V])
 	if pn == nil {
 		pn = &ptrNode[K, V]{}
 	}
 	pn.init(k, v)
-	return ptrLocation[K, V]{
+	return location[K, V]{
 		ptrNode: pn,
 	}
 }
 
-func (lc *pooledLocationCache[K, V]) release(loc ptrLocation[K, V]) { //nolint:unused // used in locationCache iface
-	lc.p.Put(loc.ptrNode)
+func (lc *pooledLocationCache[K, V]) release(loc location[K, V]) { //nolint:unused // used in locationCache iface
+	pn := loc.ptrNode
+	*pn = ptrNode[K, V]{}
+	lc.p.Put(pn)
 }
