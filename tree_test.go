@@ -59,7 +59,7 @@ func TestTreeInsert(t *testing.T) {
 		a.Equal(i, e.Key)
 		a.Equal(i, *e.Value)
 		a.True(found)
-		a.NoErrorf(checkHeightAndBalance(tree.root), "iter = %d", i)
+		a.NoErrorf(checkHeightAndBalance(tree.root, tree.options.countChildren), "iter = %d", i)
 	}
 	for i := 0; i < 128; i++ {
 		val, found := tree.Find(i)
@@ -71,12 +71,32 @@ func TestTreeInsert(t *testing.T) {
 		ptr, inserted := tree.Insert(i, i*2)
 		a.Equal(i*2, *ptr)
 		a.Falsef(inserted, "k: %v", i)
-		a.NoError(checkHeightAndBalance(tree.root))
+		a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
 	}
 	for i := 127; i >= 0; i-- {
 		val, found := tree.Find(i)
 		a.True(found)
 		a.Equal(i*2, *val)
+	}
+}
+
+func TestTreeInsertWithComparatorReturningMagnitude(t *testing.T) {
+	a := assert.New(t)
+	tree := New[int, int](func(a, b int) int {
+		return a - b
+	}, WithCountChildren(true))
+
+	for _, i := range []int{10, 20, 5, 30, 1} {
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
+		a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
+	}
+
+	a.Equal(5, tree.Len())
+	for i, want := range []int{1, 5, 10, 20, 30} {
+		e := tree.At(i)
+		a.Equal(want, e.Key)
 	}
 }
 
@@ -93,7 +113,7 @@ func TestTreeDelete(t *testing.T) {
 	a.Equal(0, v)
 	a.Equal(0, tree.Len())
 	a.True(tree.root.isNil())
-	a.NoError(checkHeightAndBalance(tree.root))
+	a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
 
 	ptr, inserted = tree.Insert(0, 0)
 	a.Equal(0, *ptr)
@@ -102,7 +122,7 @@ func TestTreeDelete(t *testing.T) {
 	a.Equal(-1, *ptr)
 	a.True(inserted)
 	a.Equal(2, tree.Len())
-	a.NoError(checkHeightAndBalance(tree.root))
+	a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
 	v, deleted = tree.Delete(0)
 	a.True(deleted)
 	a.Equal(0, v)
@@ -117,20 +137,20 @@ func TestTreeDelete(t *testing.T) {
 	a.Equal(1, *ptr)
 	a.True(inserted)
 	a.Equal(2, tree.Len())
-	a.NoError(checkHeightAndBalance(tree.root))
+	a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
 	v, deleted = tree.Delete(1)
 	a.True(deleted)
 	a.Equal(1, v)
 	a.Equal(1, tree.Len())
 	_, deleted = tree.Delete(-1)
 	a.False(deleted)
-	a.NoError(checkHeightAndBalance(tree.root))
+	a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
 	v, deleted = tree.Delete(0)
 	a.True(deleted)
 	a.Equal(0, v)
 	a.Equal(0, tree.Len())
 	a.True(tree.root.isNil())
-	a.NoError(checkHeightAndBalance(tree.root))
+	a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
 
 	ptr, inserted = tree.Insert(0, 0)
 	a.Equal(0, *ptr)
@@ -138,30 +158,30 @@ func TestTreeDelete(t *testing.T) {
 	ptr, inserted = tree.Insert(1, 1)
 	a.Equal(1, *ptr)
 	a.True(inserted)
-	a.NoError(checkHeightAndBalance(tree.root))
+	a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
 	v, deleted = tree.Delete(0)
 	a.True(deleted)
 	a.Equal(0, v)
-	a.NoError(checkHeightAndBalance(tree.root))
+	a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
 	a.Equal(1, tree.Len())
 	v, deleted = tree.Delete(1)
 	a.True(deleted)
 	a.Equal(1, v)
-	a.NoError(checkHeightAndBalance(tree.root))
+	a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
 	a.True(tree.root.isNil())
-	a.NoError(checkHeightAndBalance(tree.root))
+	a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
 
-	for i := 128; i <= 0; i-- {
+	for i := 128; i >= 0; i-- {
 		ptr, inserted = tree.Insert(i, i)
 		a.Equal(i, *ptr)
 		a.True(inserted)
-		a.NoError(checkHeightAndBalance(tree.root))
+		a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
 	}
-	for i := 128; i <= 0; i-- {
+	for i := 128; i >= 0; i-- {
 		v, deleted = tree.Delete(i)
 		a.True(deleted)
 		a.Equal(i, v)
-		a.NoError(checkHeightAndBalance(tree.root))
+		a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
 	}
 	a.Equal(0, tree.Len())
 }
@@ -295,7 +315,7 @@ func doTestTreeRandom(t *testing.T, opts ...Option) {
 			ptr, inserted := tree.Insert(v, v)
 			a.Equal(v, *ptr)
 			a.True(inserted)
-			if !a.NoError(checkHeightAndBalance(tree.root)) {
+			if !a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren)) {
 				tree.locate(v)
 				fmt.Println(tree.Len())
 				printTree(tree, os.Stdout)
@@ -306,7 +326,7 @@ func doTestTreeRandom(t *testing.T, opts ...Option) {
 			val, deleted := tree.Delete(v)
 			a.Equal(v, val)
 			a.Truef(deleted, "key: %d, iter = %d", v, i)
-			a.NoErrorf(checkHeightAndBalance(tree.root), "%d", i)
+			a.NoErrorf(checkHeightAndBalance(tree.root, tree.options.countChildren), "%d", i)
 		}
 		a.Equal(0, tree.Len())
 	}
@@ -596,17 +616,17 @@ func TestTreeDescend(t *testing.T) {
 	a.False(ok)
 }
 
-func checkHeightAndBalance[K, V any](l location[K, V]) error {
-	_, _, _, err := recalcHeightAndBalance(l)
+func checkHeightAndBalance[K, V any](l location[K, V], checkCounts bool) error {
+	_, _, _, err := recalcHeightAndBalance(l, checkCounts)
 	return err
 }
 
-func recalcHeightAndBalance[K, V any](l location[K, V]) (height uint8, lCount, rCount uint32, err error) {
+func recalcHeightAndBalance[K, V any](l location[K, V], checkCounts bool) (height uint8, lCount, rCount uint32, err error) {
 	if l.isNil() {
 		return 0, 0, 0, nil
 	}
 	if !l.left().isNil() {
-		lHeight, llCount, rrCount, err := recalcHeightAndBalance(l.left())
+		lHeight, llCount, rrCount, err := recalcHeightAndBalance(l.left(), checkCounts)
 		if err != nil {
 			return 0, 0, 0, err
 		}
@@ -614,7 +634,7 @@ func recalcHeightAndBalance[K, V any](l location[K, V]) (height uint8, lCount, r
 		lCount = llCount + rrCount + 1
 	}
 	if !l.right().isNil() {
-		rHeight, rlCount, rrCount, err := recalcHeightAndBalance(l.right())
+		rHeight, rlCount, rrCount, err := recalcHeightAndBalance(l.right(), checkCounts)
 		if err != nil {
 			return 0, 0, 0, err
 		}
@@ -626,6 +646,9 @@ func recalcHeightAndBalance[K, V any](l location[K, V]) (height uint8, lCount, r
 	}
 	if l.balance() < -1 || l.balance() > 1 {
 		return 0, 0, 0, fmt.Errorf("invalid balance %d for k=%v, v=%v", l.balance(), l.key(), *l.valuePtr())
+	}
+	if count := lCount + rCount; checkCounts && count != l.childrenCount() {
+		return 0, 0, 0, fmt.Errorf("invalid children count for k=%v, v=%v, curr=%d, actual=%d", l.key(), *l.valuePtr(), l.childrenCount(), count)
 	}
 	return height, lCount, rCount, nil
 }
