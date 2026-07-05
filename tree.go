@@ -486,13 +486,13 @@ func (t *Tree[K, V, Cmp]) locate(k K) (loc location[K, V], dir direction) {
 	}
 	for {
 		var next location[K, V]
-		switch t.cmp(k, loc.key()) {
-		case -1:
+		switch cmp := t.cmp(k, loc.key()); {
+		case cmp < 0:
 			next = loc.left()
 			dir = dirLeft
-		case 0:
+		case cmp == 0:
 			return loc, dirCenter
-		case 1:
+		case cmp > 0:
 			next = loc.right()
 			dir = dirRight
 		}
