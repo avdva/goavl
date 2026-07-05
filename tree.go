@@ -433,7 +433,9 @@ func (t *Tree[K, V, Cmp]) setRoot(root location[K, V]) {
 	}
 }
 
-// Clear clears the tree.
+// Clear clears the tree in O(1) time.
+// Allocated nodes are not returned to the allocator. Delete elements explicitly
+// if you want allocator-specific release behavior, such as sync.Pool reuse.
 func (t *Tree[K, V, Cmp]) Clear() {
 	t.root = location[K, V]{}
 	t.min = t.root
