@@ -70,7 +70,7 @@ Delete(k K) (v V, deleted bool) {}
 DeleteAt(position int) (k K, v V) {}
 // DeleteIterator deletes the element pointed at by it.
 DeleteIterator(it Iterator[K, V, Cmp]) {}
-// Clear deletes all the elements.
+// Clear deletes all the elements in O(1) time without returning nodes to the allocator.
 Clear() {}
 
 // Iterators:
