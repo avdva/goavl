@@ -34,5 +34,7 @@ func (lc *pooledLocationCache[K, V]) new(k K, v V) location[K, V] { //nolint:unu
 }
 
 func (lc *pooledLocationCache[K, V]) release(loc location[K, V]) { //nolint:unused // used in locationCache iface
-	lc.p.Put(loc.ptrNode)
+	pn := loc.ptrNode
+	*pn = ptrNode[K, V]{}
+	lc.p.Put(pn)
 }
