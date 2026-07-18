@@ -186,6 +186,130 @@ func TestTreeDelete(t *testing.T) {
 	a.Equal(0, tree.Len())
 }
 
+func TestTreeUpdateKey(t *testing.T) {
+	a := assert.New(t)
+
+	t.Run("missing old key", func(t *testing.T) {
+		tree := NewComparable[int, int](WithCountChildren(true))
+		tree.Insert(1, 10)
+
+		ptr, updated := tree.UpdateKey(2, 3)
+
+		a.Nil(ptr)
+		a.False(updated)
+		a.Equal(1, tree.Len())
+		assertTreeKeys(t, tree, []int{1})
+	})
+
+	t.Run("equivalent key", func(t *testing.T) {
+		tree := New[int, int](func(a, b int) int {
+			return (a / 10) - (b / 10)
+		}, WithCountChildren(true))
+		tree.Insert(12, 100)
+
+		ptr, updated := tree.UpdateKey(12, 18)
+
+		a.True(updated)
+		a.Equal(100, *ptr)
+		a.Equal(1, tree.Len())
+		entry, found := tree.Min()
+		a.True(found)
+		a.Equal(18, entry.Key)
+		a.NoError(checkHeightAndBalance(tree.root, tree.options.countChildren))
+	})
+
+	t.Run("existing new key", func(t *testing.T) {
+		tree := NewComparable[int, int](WithCountChildren(true))
+		for _, k := range []int{1, 3, 5, 7} {
+			tree.Insert(k, k*10)
+		}
+
+		ptr, updated := tree.UpdateKey(3, 5)
+
+		a.True(updated)
+		a.Equal(30, *ptr)
+		a.Equal(3, tree.Len())
+		_, found := tree.Find(3)
+		a.False(found)
+		got, found := tree.Find(5)
+		a.True(found)
+		a.Equal(30, *got)
+		assertTreeKeys(t, tree, []int{1, 5, 7})
+	})
+
+	t.Run("in place", func(t *testing.T) {
+		tree := NewComparable[int, int](WithCountChildren(true))
+		for _, k := range []int{1, 3, 5} {
+			tree.Insert(k, k*10)
+		}
+
+		ptr, updated := tree.UpdateKey(3, 4)
+
+		a.True(updated)
+		a.Equal(30, *ptr)
+		a.Equal(3, tree.Len())
+		_, found := tree.Find(3)
+		a.False(found)
+		got, found := tree.Find(4)
+		a.True(found)
+		a.Equal(30, *got)
+		assertTreeKeys(t, tree, []int{1, 4, 5})
+	})
+
+	t.Run("generic path", func(t *testing.T) {
+		tree := NewComparable[int, int](WithCountChildren(true))
+		for i := 1; i <= 8; i++ {
+			tree.Insert(i, i*10)
+		}
+
+		ptr, updated := tree.UpdateKey(2, 9)
+
+		a.True(updated)
+		a.Equal(20, *ptr)
+		a.Equal(8, tree.Len())
+		_, found := tree.Find(2)
+		a.False(found)
+		got, found := tree.Find(9)
+		a.True(found)
+		a.Equal(20, *got)
+		assertTreeKeys(t, tree, []int{1, 3, 4, 5, 6, 7, 8, 9})
+	})
+}
+
+func TestTreeUpdateKeyRandom(t *testing.T) {
+	const count = 128
+	a := assert.New(t)
+	tree := NewComparable[int, int](WithCountChildren(true))
+	keys := make([]int, count)
+	for i := 0; i < count; i++ {
+		keys[i] = i
+		tree.Insert(i, i*10)
+	}
+	rand.New(rand.NewSource(1)).Shuffle(len(keys), func(i, j int) {
+		keys[i], keys[j] = keys[j], keys[i]
+	})
+
+	for i, k := range keys {
+		newKey := k + count
+		ptr, updated := tree.UpdateKey(k, newKey)
+		a.Truef(updated, "key: %d, iter = %d", k, i)
+		a.Equal(k*10, *ptr)
+		_, found := tree.Find(k)
+		a.False(found)
+		got, found := tree.Find(newKey)
+		a.True(found)
+		a.Equal(k*10, *got)
+		a.NoErrorf(checkHeightAndBalance(tree.root, tree.options.countChildren), "key: %d, iter = %d", k, i)
+	}
+
+	a.Equal(count, tree.Len())
+	for i := 0; i < count; i++ {
+		entry := tree.At(i)
+		a.Equal(i+count, entry.Key)
+		a.Equal(i*10, *entry.Value)
+	}
+}
+
 func TestTreeDeleteMin(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
@@ -675,5 +799,15 @@ func traverseLocation[K, V any](loc location[K, V], f func(loc location[K, V]) b
 	f(loc)
 	if !loc.right().isNil() {
 		traverseLocation(loc.right(), f)
+	}
+}
+
+func assertTreeKeys[V any, Cmp func(a, b int) int](t *testing.T, tree *Tree[int, V, Cmp], want []int) {
+	t.Helper()
+	assert.NoError(t, checkHeightAndBalance(tree.root, tree.options.countChildren))
+	assert.Equal(t, len(want), tree.Len())
+	for i, key := range want {
+		entry := tree.At(i)
+		assert.Equal(t, key, entry.Key)
 	}
 }

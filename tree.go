@@ -141,6 +141,11 @@ func (t *Tree[K, V, Cmp]) Insert(k K, v V) (valuePtr *V, inserted bool) {
 	}
 	newNode := t.lc.new(k, v)
 	newNode.setID(t.newLocationID())
+	t.insertLocation(loc, dir, newNode)
+	return newNode.valuePtr(), true
+}
+
+func (t *Tree[K, V, Cmp]) insertLocation(loc location[K, V], dir direction, newNode location[K, V]) {
 	t.length++
 	switch dir {
 	case dirLeft, dirRight:
@@ -162,7 +167,6 @@ func (t *Tree[K, V, Cmp]) Insert(k K, v V) (valuePtr *V, inserted bool) {
 		t.root = newNode
 		t.min, t.max = t.root, t.root
 	}
-	return newNode.valuePtr(), true
 }
 
 func (t *Tree[K, V, Cmp]) updateCounts(loc location[K, V]) {
@@ -294,6 +298,54 @@ func (t *Tree[K, V, Cmp]) Delete(k K) (v V, deleted bool) {
 	return v, true
 }
 
+func (t *Tree[K, V, Cmp]) canUpdateKeyInPlace(loc location[K, V], newKey K) bool {
+	if prev := prevLocation(loc); !prev.isNil() && t.cmp(prev.key(), newKey) >= 0 {
+		return false
+	}
+	if next := nextLocation(loc); !next.isNil() && t.cmp(newKey, next.key()) >= 0 {
+		return false
+	}
+	return true
+}
+
+func (t *Tree[K, V, Cmp]) resetDetachedLocation(loc location[K, V], k K, v V) {
+	loc.init(k, v)
+}
+
+// UpdateKey changes a node key while preserving its value.
+// If newKey already exists, the old value replaces the existing value and oldKey is removed.
+// Returns a pointer to the final value and true if oldKey was present.
+// Time complexity: O(logn).
+func (t *Tree[K, V, Cmp]) UpdateKey(oldKey K, newKey K) (valuePtr *V, updated bool) {
+	oldLoc, oldDir := t.locate(oldKey)
+	if oldDir != dirCenter || oldLoc.isNil() {
+		return nil, false
+	}
+	if t.cmp(oldLoc.key(), newKey) == 0 {
+		oldLoc.k = newKey
+		return oldLoc.valuePtr(), true
+	}
+
+	newLoc, newDir := t.locate(newKey)
+	if newDir == dirCenter && !newLoc.isNil() {
+		oldValue := *oldLoc.valuePtr()
+		newLoc.setValue(oldValue)
+		t.deleteAndReplace(oldLoc)
+		return newLoc.valuePtr(), true
+	}
+
+	if t.canUpdateKeyInPlace(oldLoc, newKey) {
+		oldLoc.k = newKey
+		return oldLoc.valuePtr(), true
+	}
+
+	oldValue := *oldLoc.valuePtr()
+	t.detachAndReplace(oldLoc)
+	t.resetDetachedLocation(oldLoc, newKey, oldValue)
+	t.insertLocation(newLoc, newDir, oldLoc)
+	return oldLoc.valuePtr(), true
+}
+
 // DeleteIterator deletes the element referenced by the iterator.
 // Returns iterator to the next element.
 // Time complexity: O(logn).
@@ -354,7 +406,7 @@ func (t *Tree[K, V, Cmp]) findReplacement(loc location[K, V]) location[K, V] {
 	return replacement
 }
 
-func (t *Tree[K, V, Cmp]) deleteAndReplace(loc location[K, V]) {
+func (t *Tree[K, V, Cmp]) detachAndReplace(loc location[K, V]) {
 	replacement := t.findReplacement(loc)
 	parent, dir := loc.parentAndDir()
 	if loc == t.min {
@@ -399,11 +451,15 @@ func (t *Tree[K, V, Cmp]) deleteAndReplace(loc location[K, V]) {
 			t.checkBalance(replacementParent, true)
 		}
 	}
+	t.length--
+}
+
+func (t *Tree[K, V, Cmp]) deleteAndReplace(loc location[K, V]) {
+	t.detachAndReplace(loc)
 	loc.ptrNode.left = location[K, V]{}
 	loc.ptrNode.right = location[K, V]{}
 	loc.ptrNode.parent = location[K, V]{}
 	t.lc.release(loc)
-	t.length--
 }
 
 func goLeft[K, V any](loc location[K, V]) location[K, V] {
