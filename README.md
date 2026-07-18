@@ -5,7 +5,6 @@ An [AVL tree](https://en.wikipedia.org/wiki/AVL_tree) implementation in Go.
 
 ![Go build](https://github.com/avdva/goavl/actions/workflows/go.yml/badge.svg)
 ![Golangci-lint](https://github.com/avdva/goavl/workflows/golangci-lint/badge.svg)
-[![Go Report Card](https://goreportcard.com/badge/github.com/avdva/goavl)](https://goreportcard.com/report/github.com/avdva/goavl)
 
 ## Installation
 
