@@ -51,7 +51,11 @@ func ExampleTree() {
 		fmt.Printf("the value for 'b' is '%s'\n", *v)
 	}
 	e := tree.At(2)
-	fmt.Printf("the kv at position 2 is %s: %s", e.Key, *e.Value)
+	fmt.Printf("the kv at position 2 is %s: %s\n", e.Key, *e.Value)
+	valuePtr, updated := tree.UpdateKey("m", "n")
+	if updated {
+		fmt.Printf("the value of key 'm' was updated to 'n', value is still '%s'", *valuePtr)
+	}
 	// Output: tree, normal order
 	// k: a, v: a
 	// k: b, v: b
@@ -66,6 +70,7 @@ func ExampleTree() {
 	// k: a, v: a
 	// the value for 'b' is 'b'
 	// the kv at position 2 is l: l
+	// the value of key 'm' was updated to 'n', value is still 'm'
 }
 
 func ExampleNewComparable() {

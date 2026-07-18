@@ -69,6 +69,9 @@ Len() int {}
 // Tree modifications:
 // Insert inserts a kv pair.
 Insert(k K, v V) (v *V, inserted bool) {}
+// UpdateKey changes oldKey to newKey while preserving the value.
+// If newKey already exists, its value is replaced and oldKey is removed.
+UpdateKey(oldKey K, newKey K) (v *V, updated bool) {}
 // Delete deletes a key.
 Delete(k K) (v V, deleted bool) {}
 // DeleteAt deletes i'th element.
