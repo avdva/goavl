@@ -309,7 +309,7 @@ func (t *Tree[K, V, Cmp]) canUpdateKeyInPlace(loc location[K, V], newKey K) bool
 }
 
 func (t *Tree[K, V, Cmp]) resetDetachedLocation(loc location[K, V], k K, v V) {
-	loc.ptrNode.init(k, v)
+	loc.init(k, v)
 }
 
 // UpdateKey changes a node key while preserving its value.
@@ -322,7 +322,7 @@ func (t *Tree[K, V, Cmp]) UpdateKey(oldKey K, newKey K) (valuePtr *V, updated bo
 		return nil, false
 	}
 	if t.cmp(oldLoc.key(), newKey) == 0 {
-		oldLoc.ptrNode.k = newKey
+		oldLoc.k = newKey
 		return oldLoc.valuePtr(), true
 	}
 
@@ -335,7 +335,7 @@ func (t *Tree[K, V, Cmp]) UpdateKey(oldKey K, newKey K) (valuePtr *V, updated bo
 	}
 
 	if t.canUpdateKeyInPlace(oldLoc, newKey) {
-		oldLoc.ptrNode.k = newKey
+		oldLoc.k = newKey
 		return oldLoc.valuePtr(), true
 	}
 
