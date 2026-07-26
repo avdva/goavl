@@ -11,10 +11,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func intCmp(a, b int) int {
+	if a < b {
+		return -1
+	}
+	if a > b {
+		return 1
+	}
+	return 0
+}
+
 func TestEmptyTree(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int](WithCountChildren(true))
-	it := tree.AscendFromStart()
+	it := tree.IteratorAtFirst()
 	e, ok := it.Next()
 	a.Equal(0, e.Key)
 	a.Equal((*int)(nil), e.Value)
@@ -22,7 +32,7 @@ func TestEmptyTree(t *testing.T) {
 	v, ok := tree.Delete(0)
 	a.Equal(0, v)
 	a.Equal(false, ok)
-	it = tree.DescendFromEnd()
+	it = tree.IteratorAtLast()
 	e, ok = it.Prev()
 	a.Equal(0, e.Key)
 	a.Equal((*int)(nil), e.Value)
@@ -464,7 +474,7 @@ func TestTreeIterator(t *testing.T) {
 		a.Equal(i, *ptr)
 		a.True(inserted)
 	}
-	it := tree.AscendFromStart()
+	it := tree.IteratorAtFirst()
 	for i := 0; ; i++ {
 		e, ok := it.Next()
 		if i == 128 {
@@ -490,7 +500,7 @@ func TestTreeIterator(t *testing.T) {
 func TestTreeDeleteIterator(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int]()
-	it := tree.AscendFromStart()
+	it := tree.IteratorAtFirst()
 	_, ok := it.Value()
 	a.False(ok)
 
@@ -503,7 +513,7 @@ func TestTreeDeleteIterator(t *testing.T) {
 		a.Equal(i, *ptr)
 		a.True(inserted)
 	}
-	it = tree.AscendFromStart()
+	it = tree.IteratorAtFirst()
 	for i := 0; i < 128; i++ {
 		e, ok := it.Value()
 		a.True(ok)
@@ -524,7 +534,7 @@ func TestTreeDeleteIterator2(t *testing.T) {
 		a.Equal(i, *ptr)
 		a.True(inserted)
 	}
-	it := tree.AscendFromStart()
+	it := tree.IteratorAtFirst()
 	// delete all even keys
 	for i := 0; i < 64; i++ {
 		e, ok := it.Value()
@@ -539,7 +549,7 @@ func TestTreeDeleteIterator2(t *testing.T) {
 		a.Equal(i*2+1, *e.Value)
 	}
 	// delete all odd keys
-	it = tree.AscendFromStart()
+	it = tree.IteratorAtFirst()
 	for i := 0; i < 64; i++ {
 		e, ok := it.Value()
 		a.True(ok)
@@ -558,7 +568,7 @@ func TestTreeDeleteIteratorRejectsStaleIterator(t *testing.T) {
 	tree.Insert(1, 1)
 	tree.Insert(2, 2)
 
-	it := tree.AscendFromStart()
+	it := tree.IteratorAtFirst()
 	next := tree.DeleteIterator(it)
 	a.Equal(1, tree.Len())
 
@@ -577,7 +587,7 @@ func TestTreeDeleteIteratorRejectsReusedStaleIterator(t *testing.T) {
 	tree := NewComparable[int, int](WithSyncPoolAllocator(true))
 	tree.Insert(1, 1)
 
-	it := tree.AscendFromStart()
+	it := tree.IteratorAtFirst()
 	tree.DeleteIterator(it)
 	tree.Insert(2, 2)
 
@@ -595,7 +605,7 @@ func TestTreeDeleteIteratorRejectsOtherTreeIterator(t *testing.T) {
 	tree1.Insert(1, 1)
 	tree2.Insert(2, 2)
 
-	it := tree1.AscendFromStart()
+	it := tree1.IteratorAtFirst()
 	invalid := tree2.DeleteIterator(it)
 
 	_, ok := invalid.Value()
@@ -618,7 +628,7 @@ func TestTreeIteratorValue(t *testing.T) {
 		a.Equal(i, *ptr)
 		a.True(inserted)
 	}
-	it := tree.AscendFromStart()
+	it := tree.IteratorAtFirst()
 	for i := 0; ; i++ {
 		e, ok := it.Value()
 		if i == 128 {
@@ -630,7 +640,7 @@ func TestTreeIteratorValue(t *testing.T) {
 		a.Equal(i, *e.Value)
 		it.Next()
 	}
-	it = tree.DescendFromEnd()
+	it = tree.IteratorAtLast()
 	for i := 127; ; i-- {
 		e, ok := it.Value()
 		if i == -1 {
@@ -644,7 +654,7 @@ func TestTreeIteratorValue(t *testing.T) {
 	}
 }
 
-func TestTreeAscend(t *testing.T) {
+func TestTreeLowerBound(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int]()
 	for i := 0; i <= 100; i += 5 {
@@ -652,13 +662,13 @@ func TestTreeAscend(t *testing.T) {
 		a.Equal(i, *ptr)
 		a.True(inserted)
 	}
-	it := tree.Ascend(-1)
+	it := tree.LowerBound(-1)
 	e, ok := it.Next()
 	a.True(ok)
 	a.Equal(0, e.Key)
 	a.Equal(0, *e.Value)
 	for i := 0; i <= 100; i++ {
-		it = tree.Ascend(i)
+		it = tree.LowerBound(i)
 		e, ok := it.Next()
 		a.True(ok)
 		if rem := i % 5; rem == 0 {
@@ -669,16 +679,16 @@ func TestTreeAscend(t *testing.T) {
 			a.Equal(i-rem+5, *e.Value)
 		}
 	}
-	it = tree.Ascend(101)
+	it = tree.LowerBound(101)
 	_, ok = it.Next()
 	a.False(ok)
 }
 
-func TestTreeAscendAt(t *testing.T) {
+func TestTreeIteratorAt(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int]()
 	a.Panics(func() {
-		tree.AscendAt(0)
+		tree.IteratorAt(0)
 	})
 	for i := 0; i <= 100; i++ {
 		ptr, inserted := tree.Insert(i, i)
@@ -686,7 +696,7 @@ func TestTreeAscendAt(t *testing.T) {
 		a.True(inserted)
 	}
 	for i := 0; i <= 100; i++ {
-		it := tree.AscendAt(i)
+		it := tree.IteratorAt(i)
 		e, ok := it.Value()
 		a.True(ok)
 		a.Equal(i, e.Key)
@@ -699,7 +709,7 @@ func TestTreeAscendAt(t *testing.T) {
 			a.Equal(j, *e.Value)
 		}
 
-		it = tree.AscendAt(i)
+		it = tree.IteratorAt(i)
 		for j := i + 1; j < tree.Len(); j++ {
 			it.Next()
 			e, ok = it.Value()
@@ -710,7 +720,7 @@ func TestTreeAscendAt(t *testing.T) {
 	}
 }
 
-func TestTreeDescend(t *testing.T) {
+func TestTreeFloor(t *testing.T) {
 	a := assert.New(t)
 	tree := NewComparable[int, int]()
 	for i := 0; i <= 100; i += 5 {
@@ -718,13 +728,13 @@ func TestTreeDescend(t *testing.T) {
 		a.Equal(i, *ptr)
 		a.True(inserted)
 	}
-	it := tree.Descend(101)
+	it := tree.Floor(101)
 	e, ok := it.Next()
 	a.True(ok)
 	a.Equal(100, e.Key)
 	a.Equal(100, *e.Value)
 	for i := 0; i <= 100; i++ {
-		it = tree.Descend(i)
+		it = tree.Floor(i)
 		e, ok := it.Next()
 		a.True(ok)
 		if rem := i % 5; rem == 0 {
@@ -735,9 +745,269 @@ func TestTreeDescend(t *testing.T) {
 			a.Equal(i-rem, *e.Value)
 		}
 	}
-	it = tree.Descend(-1)
+	it = tree.Floor(-1)
 	_, ok = it.Next()
 	a.False(ok)
+}
+
+func TestTreeNewIteratorNames(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int](WithCountChildren(true))
+	a.Panics(func() {
+		tree.IteratorAt(0)
+	})
+	for i := 0; i <= 100; i++ {
+		ptr, inserted := tree.Insert(i, i)
+		a.Equal(i, *ptr)
+		a.True(inserted)
+	}
+
+	it := tree.IteratorAtFirst()
+	e, ok := it.Value()
+	a.True(ok)
+	a.Equal(0, e.Key)
+
+	it = tree.IteratorAtLast()
+	e, ok = it.Value()
+	a.True(ok)
+	a.Equal(100, e.Key)
+
+	for i := 0; i <= 100; i++ {
+		it = tree.IteratorAt(i)
+		e, ok = it.Value()
+		a.True(ok)
+		a.Equal(i, e.Key)
+	}
+}
+
+func TestTreeBounds(t *testing.T) {
+	a := assert.New(t)
+	tree := NewComparable[int, int](WithCountChildren(true))
+	for _, key := range []int{0, 10, 20, 30, 40} {
+		ptr, inserted := tree.Insert(key, key)
+		a.Equal(key, *ptr)
+		a.True(inserted)
+	}
+
+	it := tree.LowerBound(5)
+	e, ok := it.Value()
+	a.True(ok)
+	a.Equal(10, e.Key)
+	it = tree.LowerBound(10)
+	e, ok = it.Value()
+	a.True(ok)
+	a.Equal(10, e.Key)
+	it = tree.LowerBound(41)
+	e, ok = it.Value()
+	a.False(ok)
+	a.Equal(0, e.Key)
+
+	it = tree.UpperBound(5)
+	e, ok = it.Value()
+	a.True(ok)
+	a.Equal(10, e.Key)
+	it = tree.UpperBound(10)
+	e, ok = it.Value()
+	a.True(ok)
+	a.Equal(20, e.Key)
+	it = tree.UpperBound(40)
+	e, ok = it.Value()
+	a.False(ok)
+	a.Equal(0, e.Key)
+
+	it = tree.Floor(25)
+	e, ok = it.Value()
+	a.True(ok)
+	a.Equal(20, e.Key)
+	it = tree.Floor(20)
+	e, ok = it.Value()
+	a.True(ok)
+	a.Equal(20, e.Key)
+	it = tree.Floor(-1)
+	e, ok = it.Value()
+	a.False(ok)
+	a.Equal(0, e.Key)
+
+	it = tree.LowerBound(10)
+	e, ok = it.Value()
+	a.True(ok)
+	a.Equal(10, e.Key)
+	it = tree.Floor(25)
+	e, ok = it.Value()
+	a.True(ok)
+	a.Equal(20, e.Key)
+}
+
+func sortedRank(keys []int, key int) (rank int, found bool) {
+	for i, candidate := range keys {
+		switch cmp := intCmp(key, candidate); {
+		case cmp < 0:
+			return 0, false
+		case cmp == 0:
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+func sortedLowerBoundRank(keys []int, key int) (rank int, found bool) {
+	for i, candidate := range keys {
+		if intCmp(key, candidate) <= 0 {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+func sortedFloorRank(keys []int, key int) (rank int, found bool) {
+	for i, candidate := range keys {
+		if intCmp(key, candidate) < 0 {
+			if i == 0 {
+				return 0, false
+			}
+			return i - 1, true
+		}
+	}
+	if len(keys) == 0 {
+		return 0, false
+	}
+	return len(keys) - 1, true
+}
+
+func sortedUpperBoundRank(keys []int, key int) (rank int, found bool) {
+	for i, candidate := range keys {
+		if intCmp(key, candidate) < 0 {
+			return i, true
+		}
+	}
+	return 0, false
+}
+
+func sortedRankDistance(keys []int, k1 int, k2 int) (distance int, found bool) {
+	r1, found := sortedRank(keys, k1)
+	if !found {
+		return 0, false
+	}
+	r2, found := sortedRank(keys, k2)
+	if !found {
+		return 0, false
+	}
+	if r2 >= r1 {
+		return r2 - r1, true
+	}
+	return r1 - r2, true
+}
+
+func sortedCountInRange(keys []int, k1 int, k2 int) int {
+	r1, found := sortedLowerBoundRank(keys, k1)
+	if !found {
+		return 0
+	}
+	r2, found := sortedFloorRank(keys, k2)
+	if !found {
+		return 0
+	}
+	if r2 >= r1 {
+		return r2 - r1 + 1
+	}
+	return 0
+}
+
+func assertOptionalEntryKey(t *testing.T, expected int, expectedFound bool, entry Entry[int, int], found bool) {
+	t.Helper()
+	a := assert.New(t)
+	a.Equal(expectedFound, found)
+	if expectedFound {
+		a.Equal(expected, entry.Key)
+		a.Equal(expected, *entry.Value)
+	} else {
+		a.Equal(0, entry.Key)
+		a.Nil(entry.Value)
+	}
+}
+
+func testTreeRankRangeAndBoundsAgainstSortedSlice(t *testing.T, opts ...Option) {
+	t.Helper()
+	a := assert.New(t)
+	tree := NewComparable[int, int](opts...)
+
+	sortedKeys := []int{-50, -10, 0, 3, 4, 10, 17, 31, 32, 99}
+	insertKeys := append([]int(nil), sortedKeys...)
+	rand.New(rand.NewSource(0x5eed)).Shuffle(len(insertKeys), func(i, j int) {
+		insertKeys[i], insertKeys[j] = insertKeys[j], insertKeys[i]
+	})
+
+	for _, key := range insertKeys {
+		ptr, inserted := tree.Insert(key, key)
+		a.Equal(key, *ptr)
+		a.True(inserted)
+	}
+
+	for rank, key := range sortedKeys {
+		actualRank, found := tree.Rank(key)
+		a.True(found)
+		a.Equal(rank, actualRank)
+		a.Equal(key, tree.At(rank).Key)
+		it := tree.IteratorAt(rank)
+		entry, ok := it.Value()
+		a.True(ok)
+		a.Equal(key, entry.Key)
+	}
+
+	queryKeys := []int{-60, -50, -49, -11, -10, -9, -1, 0, 1, 3, 4, 5, 10, 16, 17, 18, 30, 31, 32, 33, 98, 99, 100}
+	for _, key := range queryKeys {
+		expectedRank, expectedFound := sortedRank(sortedKeys, key)
+		actualRank, actualFound := tree.Rank(key)
+		a.Equal(expectedFound, actualFound)
+		if expectedFound {
+			a.Equal(expectedRank, actualRank)
+		}
+
+		lowerRank, lowerFound := sortedLowerBoundRank(sortedKeys, key)
+		lowerIt := tree.LowerBound(key)
+		lowerEntry, lowerOK := lowerIt.Value()
+		if lowerFound {
+			assertOptionalEntryKey(t, sortedKeys[lowerRank], true, lowerEntry, lowerOK)
+		} else {
+			assertOptionalEntryKey(t, 0, false, lowerEntry, lowerOK)
+		}
+
+		upperRank, upperFound := sortedUpperBoundRank(sortedKeys, key)
+		upperIt := tree.UpperBound(key)
+		upperEntry, upperOK := upperIt.Value()
+		if upperFound {
+			assertOptionalEntryKey(t, sortedKeys[upperRank], true, upperEntry, upperOK)
+		} else {
+			assertOptionalEntryKey(t, 0, false, upperEntry, upperOK)
+		}
+	}
+
+	for _, k1 := range queryKeys {
+		for _, k2 := range queryKeys {
+			expectedDistance, expectedFound := sortedRankDistance(sortedKeys, k1, k2)
+			actualDistance, actualFound := tree.RankDistance(k1, k2)
+			a.Equal(expectedFound, actualFound)
+			if expectedFound {
+				a.Equal(expectedDistance, actualDistance)
+			}
+			a.Equal(sortedCountInRange(sortedKeys, k1, k2), tree.CountInRange(k1, k2))
+		}
+	}
+}
+
+func TestTreeRankRangeAndBoundsAgainstSortedSlice(t *testing.T) {
+	t.Run("basic without counts", func(t *testing.T) {
+		testTreeRankRangeAndBoundsAgainstSortedSlice(t, WithCountChildren(false))
+	})
+	t.Run("basic with counts", func(t *testing.T) {
+		testTreeRankRangeAndBoundsAgainstSortedSlice(t, WithCountChildren(true))
+	})
+	t.Run("sync pool without counts", func(t *testing.T) {
+		testTreeRankRangeAndBoundsAgainstSortedSlice(t, WithCountChildren(false), WithSyncPool(nil))
+	})
+	t.Run("sync pool with counts", func(t *testing.T) {
+		testTreeRankRangeAndBoundsAgainstSortedSlice(t, WithCountChildren(true), WithSyncPool(nil))
+	})
 }
 
 func checkHeightAndBalance[K, V any](l location[K, V], checkCounts bool) error {

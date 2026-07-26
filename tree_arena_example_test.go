@@ -18,7 +18,7 @@ func ExampleWithArena() {
 		}
 	}
 	fmt.Println("tree, normal order")
-	fwdIt := tree.AscendFromStart()
+	fwdIt := tree.IteratorAtFirst()
 	for {
 		e, ok := fwdIt.Value()
 		if !ok {
