@@ -62,6 +62,12 @@ Min() (entry Entry[K, V], found bool) {}
 Max() (entry Entry[K, V], found bool) {}
 // At returns the i'th element of the tree.
 At(position int) Entry[K, V] {}
+// Rank returns the sorted position of a key.
+Rank(k K) (rank int, found bool) {}
+// RankDistance returns the absolute distance between sorted positions of two keys.
+RankDistance(k1 K, k2 K) (distance int, found bool) {}
+// CountInRange returns the number of elements in the inclusive key range [k1, k2].
+CountInRange(k1 K, k2 K) int {}
 // Len returns the number of elements.
 Len() int {}
 
@@ -82,16 +88,18 @@ DeleteIterator(it Iterator[K, V, Cmp]) Iterator[K, V, Cmp] {}
 Clear() {}
 
 // Iterators:
-// AscendFromStart returns an iterator pointing to the smallest element.
-AscendFromStart() Iterator[K, V, Cmp] {}
-// DescendFromEnd returns an iterator pointing to the largest element.
-DescendFromEnd() Iterator[K, V, Cmp] {}
-// Ascend returns an iterator pointing to the element that's >= `from`.
-Ascend(from K) Iterator[K, V, Cmp] {}
-// Descend returns an iterator pointing to the element that's <= `from`.
-Descend(from K) Iterator[K, V, Cmp] {}
-// AscendAt returns an iterator pointing to the i'th element.
-AscendAt(position int) Iterator[K, V, Cmp]
+// IteratorAtFirst returns an iterator pointing to the smallest element.
+IteratorAtFirst() Iterator[K, V, Cmp] {}
+// IteratorAtLast returns an iterator pointing to the largest element.
+IteratorAtLast() Iterator[K, V, Cmp] {}
+// IteratorAt returns an iterator pointing to the i'th element.
+IteratorAt(position int) Iterator[K, V, Cmp]
+// LowerBound returns an iterator pointing to the first element that's >= key.
+LowerBound(k K) Iterator[K, V, Cmp] {}
+// UpperBound returns an iterator pointing to the first element that's > key.
+UpperBound(k K) Iterator[K, V, Cmp] {}
+// Floor returns an iterator pointing to the last element that's <= key.
+Floor(k K) Iterator[K, V, Cmp] {}
 /*
 Go 1.23 iterators are also supported:
 for k, v := range tree.All() {
@@ -102,7 +110,8 @@ for k, v := range tree.All() {
 
 ## Notes
 
-- `At`, `AscendAt`, and `DeleteAt` are O(logn) only when `WithCountChildren(true)` is enabled. Without it they may scan from the nearest end.
+- `At`, `IteratorAt`, `Rank`, `RankDistance`, `CountInRange`, and `DeleteAt` are O(logn) only when `WithCountChildren(true)` is enabled. Without it they may scan from the nearest end.
+- `AscendFromStart`, `DescendFromEnd`, `Ascend`, `Descend`, and `AscendAt` are deprecated aliases for the newer iterator naming.
 - Tree mutations can invalidate existing iterators. Use the iterator returned by `DeleteIterator` to continue after deleting through an iterator.
 - `Clear` is O(1): it drops tree references but does not walk nodes or return them to allocator-specific storage. Delete elements explicitly if you need `sync.Pool` reuse before clearing.
 - Arena allocation requires the experimental Go arenas feature. Free the arena only after all trees and values allocated from it are no longer used.

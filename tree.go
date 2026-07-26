@@ -228,6 +228,179 @@ func (t *Tree[K, V, Cmp]) At(position int) Entry[K, V] {
 	return Entry[K, V]{Key: node.key(), Value: node.valuePtr()}
 }
 
+// Rank returns the position of k in the sorted sequence.
+// Returns false if k is not present.
+// Time complexity:
+//
+//	O(logn) - if children node counts are enabled.
+//	O(n) - otherwise.
+func (t *Tree[K, V, Cmp]) Rank(k K) (rank int, found bool) {
+	if !t.options.countChildren {
+		return t.rankLinearly(k)
+	}
+	return t.rankWithCountChildren(k)
+}
+
+func (t *Tree[K, V, Cmp]) rankWithCountChildren(k K) (rank int, found bool) {
+	loc := t.root
+	for !loc.isNil() {
+		switch cmp := t.cmp(k, loc.key()); {
+		case cmp < 0:
+			loc = loc.left()
+		case cmp == 0:
+			return rank + int(loc.leftChildrenCount()), true
+		case cmp > 0:
+			rank += int(loc.leftChildrenCount()) + 1
+			loc = loc.right()
+		}
+	}
+	return 0, false
+}
+
+func (t *Tree[K, V, Cmp]) rankLinearly(k K) (rank int, found bool) {
+	it := t.IteratorAtFirst()
+	for entry, ok := it.Value(); ok; entry, ok = it.Value() {
+		switch cmp := t.cmp(k, entry.Key); {
+		case cmp < 0:
+			return 0, false
+		case cmp == 0:
+			return rank, true
+		case cmp > 0:
+			rank++
+			it.Next()
+		}
+	}
+	return 0, false
+}
+
+// RankDistance returns the absolute distance between sorted positions of k1 and k2.
+// Returns false if k1 or k2 is not present.
+// Time complexity:
+//
+//	O(logn) - if children node counts are enabled.
+//	O(n) - otherwise.
+func (t *Tree[K, V, Cmp]) RankDistance(k1 K, k2 K) (distance int, found bool) {
+	r1, found := t.Rank(k1)
+	if !found {
+		return 0, false
+	}
+	r2, found := t.Rank(k2)
+	if !found {
+		return 0, false
+	}
+	if r2 >= r1 {
+		return r2 - r1, true
+	}
+	return r1 - r2, true
+}
+
+// CountInRange returns the number of elements on the inclusive interval [k1, k2].
+// k1 and k2 themselves may not be present in the tree.
+// Time complexity:
+//
+//	O(logn) - if children node counts are enabled.
+//	O(n) - otherwise.
+func (t *Tree[K, V, Cmp]) CountInRange(k1 K, k2 K) int {
+	r1, found := t.lowerBoundRank(k1)
+	if !found {
+		return 0
+	}
+	r2, found := t.floorRank(k2)
+	if !found {
+		return 0
+	}
+	if r2 >= r1 {
+		return r2 - r1 + 1
+	}
+	return 0
+}
+
+func (t *Tree[K, V, Cmp]) lowerBoundRank(k K) (rank int, found bool) {
+	if t.options.countChildren {
+		return t.lowerBoundRankWithCountChildren(k)
+	}
+	return t.lowerBoundRankLinearly(k)
+}
+
+func (t *Tree[K, V, Cmp]) floorRank(k K) (rank int, found bool) {
+	if t.options.countChildren {
+		return t.floorRankWithCountChildren(k)
+	}
+	return t.floorRankLinearly(k)
+}
+
+func (t *Tree[K, V, Cmp]) lowerBoundRankLinearly(k K) (rank int, found bool) {
+	it := t.IteratorAtFirst()
+	for entry, ok := it.Value(); ok; entry, ok = it.Value() {
+		if t.cmp(k, entry.Key) <= 0 {
+			return rank, true
+		}
+		rank++
+		it.Next()
+	}
+	return 0, false
+}
+
+func (t *Tree[K, V, Cmp]) floorRankLinearly(k K) (rank int, found bool) {
+	it := t.IteratorAtFirst()
+	for entry, ok := it.Value(); ok; entry, ok = it.Value() {
+		if t.cmp(k, entry.Key) < 0 {
+			if rank == 0 {
+				return 0, false
+			}
+			return rank - 1, true
+		}
+		rank++
+		it.Next()
+	}
+	if rank == 0 {
+		return 0, false
+	}
+	return rank - 1, true
+}
+
+func (t *Tree[K, V, Cmp]) lowerBoundRankWithCountChildren(k K) (rank int, found bool) {
+	loc := t.root
+	candidate := -1
+	for !loc.isNil() {
+		switch cmp := t.cmp(k, loc.key()); {
+		case cmp < 0:
+			candidate = rank + int(loc.leftChildrenCount())
+			loc = loc.left()
+		case cmp == 0:
+			return rank + int(loc.leftChildrenCount()), true
+		case cmp > 0:
+			rank += int(loc.leftChildrenCount()) + 1
+			loc = loc.right()
+		}
+	}
+	if candidate < 0 {
+		return 0, false
+	}
+	return candidate, true
+}
+
+func (t *Tree[K, V, Cmp]) floorRankWithCountChildren(k K) (rank int, found bool) {
+	loc := t.root
+	candidate := -1
+	for !loc.isNil() {
+		switch cmp := t.cmp(k, loc.key()); {
+		case cmp < 0:
+			loc = loc.left()
+		case cmp == 0:
+			return rank + int(loc.leftChildrenCount()), true
+		case cmp > 0:
+			candidate = rank + int(loc.leftChildrenCount())
+			rank += int(loc.leftChildrenCount()) + 1
+			loc = loc.right()
+		}
+	}
+	if candidate < 0 {
+		return 0, false
+	}
+	return candidate, true
+}
+
 func (t *Tree[K, V, Cmp]) shouldLocateAtLinearly(position int) bool {
 	position = min2(position, t.length-position-1)
 	return position <= 8
@@ -274,15 +447,22 @@ func (t *Tree[K, V, Cmp]) iteratorAt(loc location[K, V]) Iterator[K, V, Cmp] {
 	return it
 }
 
-// AscendAt returns an iterator pointing to the i'th element.
+// IteratorAt returns an iterator pointing to the i'th element.
 // Panics if position >= tree.Len().
 // Time complexity:
 //
 //	O(logn) - if children node counts are enabled.
 //	O(n) - otherwise.
-func (t *Tree[K, V, Cmp]) AscendAt(position int) Iterator[K, V, Cmp] {
+func (t *Tree[K, V, Cmp]) IteratorAt(position int) Iterator[K, V, Cmp] {
 	loc := t.locateAt(position)
 	return t.iteratorAt(loc)
+}
+
+// AscendAt returns an iterator pointing to the i'th element.
+//
+// Deprecated: use IteratorAt instead.
+func (t *Tree[K, V, Cmp]) AscendAt(position int) Iterator[K, V, Cmp] {
+	return t.IteratorAt(position)
 }
 
 // Delete deletes a node from the tree.
@@ -504,36 +684,94 @@ func (t *Tree[K, V, Cmp]) Len() int {
 	return t.length
 }
 
-// AscendFromStart returns an iterator pointing to the minimum element.
-func (t *Tree[K, V, Cmp]) AscendFromStart() Iterator[K, V, Cmp] {
+// IteratorAtFirst returns an iterator pointing to the minimum element.
+func (t *Tree[K, V, Cmp]) IteratorAtFirst() Iterator[K, V, Cmp] {
 	return t.iteratorAt(t.min)
 }
 
-// DescendFromEnd returns an iterator pointing to the maximum element.
-func (t *Tree[K, V, Cmp]) DescendFromEnd() Iterator[K, V, Cmp] {
+// IteratorAtLast returns an iterator pointing to the maximum element.
+func (t *Tree[K, V, Cmp]) IteratorAtLast() Iterator[K, V, Cmp] {
 	return t.iteratorAt(t.max)
 }
 
-// Ascend returns an iterator pointing to the element that's >= `from`.
-func (t *Tree[K, V, Cmp]) Ascend(from K) Iterator[K, V, Cmp] {
-	loc, dir := t.locate(from)
-	if dir == dirRight {
-		for !loc.isNil() && dir == dirRight {
-			loc, dir = loc.parentAndDir()
+// LowerBound returns an iterator pointing to the first element whose key is not less than k.
+func (t *Tree[K, V, Cmp]) LowerBound(k K) Iterator[K, V, Cmp] {
+	loc := t.root
+	var candidate location[K, V]
+	for !loc.isNil() {
+		switch cmp := t.cmp(k, loc.key()); {
+		case cmp < 0:
+			candidate = loc
+			loc = loc.left()
+		case cmp == 0:
+			return t.iteratorAt(loc)
+		case cmp > 0:
+			loc = loc.right()
 		}
 	}
-	return t.iteratorAt(loc)
+	return t.iteratorAt(candidate)
 }
 
-// Descend returns an iterator pointing to the element that's <= `from`.
-func (t *Tree[K, V, Cmp]) Descend(from K) Iterator[K, V, Cmp] {
-	loc, dir := t.locate(from)
-	if dir == dirLeft {
-		for !loc.isNil() && dir == dirLeft {
-			loc, dir = loc.parentAndDir()
+// UpperBound returns an iterator pointing to the first element whose key is greater than k.
+func (t *Tree[K, V, Cmp]) UpperBound(k K) Iterator[K, V, Cmp] {
+	loc := t.root
+	var candidate location[K, V]
+	for !loc.isNil() {
+		switch cmp := t.cmp(k, loc.key()); {
+		case cmp < 0:
+			candidate = loc
+			loc = loc.left()
+		default:
+			loc = loc.right()
 		}
 	}
-	return t.iteratorAt(loc)
+	return t.iteratorAt(candidate)
+}
+
+// Floor returns an iterator pointing to the last element whose key is not greater than k.
+func (t *Tree[K, V, Cmp]) Floor(k K) Iterator[K, V, Cmp] {
+	loc := t.root
+	var candidate location[K, V]
+	for !loc.isNil() {
+		switch cmp := t.cmp(k, loc.key()); {
+		case cmp < 0:
+			loc = loc.left()
+		case cmp == 0:
+			return t.iteratorAt(loc)
+		case cmp > 0:
+			candidate = loc
+			loc = loc.right()
+		}
+	}
+	return t.iteratorAt(candidate)
+}
+
+// AscendFromStart returns an iterator pointing to the minimum element.
+//
+// Deprecated: use IteratorAtFirst instead.
+func (t *Tree[K, V, Cmp]) AscendFromStart() Iterator[K, V, Cmp] {
+	return t.IteratorAtFirst()
+}
+
+// DescendFromEnd returns an iterator pointing to the maximum element.
+//
+// Deprecated: use IteratorAtLast instead.
+func (t *Tree[K, V, Cmp]) DescendFromEnd() Iterator[K, V, Cmp] {
+	return t.IteratorAtLast()
+}
+
+// Ascend returns an iterator pointing to the element that's >= from.
+//
+// Deprecated: use LowerBound instead.
+func (t *Tree[K, V, Cmp]) Ascend(from K) Iterator[K, V, Cmp] {
+	return t.LowerBound(from)
+}
+
+// Descend returns an iterator pointing to the element that's <= from.
+//
+// Deprecated: use Floor instead.
+func (t *Tree[K, V, Cmp]) Descend(from K) Iterator[K, V, Cmp] {
+	return t.Floor(from)
 }
 
 func (t *Tree[K, V, Cmp]) locate(k K) (loc location[K, V], dir direction) {

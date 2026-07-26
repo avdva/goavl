@@ -27,7 +27,7 @@ func (m *Mutator[K, V, Cmp]) Delete() {
 // It can be used in a for-range loop (Go 1.23+).
 func (t *Tree[K, V, Cmp]) All() iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
-		it := t.AscendFromStart()
+		it := t.IteratorAtFirst()
 		for {
 			e, ok := it.Next()
 			if !ok || !yield(e.Key, *e.Value) {
@@ -42,7 +42,7 @@ func (t *Tree[K, V, Cmp]) All() iter.Seq2[K, V] {
 // Via a Mutator object one can change a value, or delete current element from the tree.
 func (t *Tree[K, V, Cmp]) AllMut() iter.Seq[*Mutator[K, V, Cmp]] {
 	return func(yield func(*Mutator[K, V, Cmp]) bool) {
-		it := t.AscendFromStart()
+		it := t.IteratorAtFirst()
 		for {
 			e, ok := it.Value()
 			if !ok {
